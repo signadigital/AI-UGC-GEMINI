@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DIONIZE UGC PART 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #f1f5f9;
+            overflow-x: hidden;
+            background: transparent; 
+        }
+
+        .aurora-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: #020617; 
+            pointer-events: none;
+        }
+        .aurora-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: #4f46e5; animation-duration: 15s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: #7c3aed; animation-duration: 20s; animation-direction: alternate-reverse; }
+        .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: #0ea5e9; opacity: 0.2; animation-duration: 12s; }
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.07), transparent 40%);
+            z-index: 0; opacity: 0; transition: opacity 0.5s; pointer-events: none;
+        }
+        .glass-card:hover::before { opacity: 1; }
+        .glass-card > * { position: relative; z-index: 1; }
+
+        .strategy-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative; overflow: hidden;
+        }
+        .strategy-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(200px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.15), transparent 40%);
+            z-index: 0; opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        .strategy-btn:hover::before { opacity: 1; }
+        .strategy-btn > * { position: relative; z-index: 1; }
+        .strategy-btn.active {
+            background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+            color: white; border-color: #818cf8;
+            box-shadow: 0 0 30px -5px rgba(99, 102, 241, 0.6); 
+            transform: translateY(-2px);
+        }
+
+        .storyboard-img-container {
+            aspect-ratio: 9/16; width: 100%; position: relative;
+            border-radius: 1.5rem; overflow: hidden; background: #1e293b;
+        }
+        .storyboard-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .glass-card:hover .storyboard-img { transform: scale(1.05); }
+
+        .shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        
+        select option { background: #0f172a; color: white; }
+        .chat-enter { transform: translateY(20px); opacity: 0; }
+        .chat-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s ease-out; }
+        .chat-exit { transform: translateY(0); opacity: 1; }
+        .chat-exit-active { transform: translateY(20px); opacity: 0; transition: all 0.3s ease-in; pointer-events: none; }
+
+        .text-gradient {
+            background: linear-gradient(to right, #fff, #a5b4fc);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .drag-highlight {
+            border-color: #6366f1 !important;
+            background-color: rgba(99, 102, 241, 0.1) !important;
+            transform: scale(1.02);
+        }
+
+        #gatekeeper {
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+        #gatekeeper.hidden-smooth {
+            opacity: 0; visibility: hidden; pointer-events: none;
+        }
+    </style>
+</head>
+<body class="antialiased relative">
+
+    <!-- AURORA BACKGROUND -->
+    <div class="aurora-bg">
+        <div class="aurora-blob blob-1"></div>
+        <div class="aurora-blob blob-2"></div>
+        <div class="aurora-blob blob-3"></div>
+    </div>
+
+    <!-- LOGIN GATEKEEPER -->
+    <div id="gatekeeper" class="fixed inset-0 z-[1000] bg-slate-950 flex flex-col items-center justify-center p-6">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] animate-pulse"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-[100px] animate-pulse delay-1000"></div>
+        </div>
+        
+        <div id="loginBox" class="relative z-10 glass-card p-10 rounded-[3rem] w-full max-w-lg border border-indigo-500/30 shadow-[0_0_50px_rgba(99,102,241,0.15)] text-center">
+            <div id="loginContent">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-8 border border-white/20">
+                    <i class="fa-solid fa-lock text-3xl text-white"></i>
+                </div>
+                
+                <h1 class="text-3xl font-black text-white uppercase tracking-tighter mb-1 text-gradient">WELCOME</h1>
+                <h2 class="text-3xl font-black text-white uppercase tracking-widest mb-8 inline-block ml-3">DIONIZE PART 2</h2>
+                
+                <form onsubmit="processLogin(event)" class="space-y-6">
+                    <div class="relative">
+                        <i class="fa-solid fa-envelope absolute left-5 top-1/2 -translate-y-1/2 text-indigo-400"></i>
+                        <input type="email" id="loginEmail" placeholder="masukan email order tool DIONIZE" required
+                            class="w-full bg-slate-900/80 border border-indigo-500/30 text-white pl-12 pr-6 py-5 rounded-2xl outline-none focus:border-indigo-400 focus:bg-slate-800 transition-all font-medium placeholder-slate-500 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest py-5 rounded-2xl transition-all shadow-[0_0_20px_rgba(99,102,241,0.4)] active:scale-95 flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i> MASUK APLIKASI
+                    </button>
+                </form>
+            </div>
+            
+            <div id="loginSuccess" class="hidden flex-col items-center justify-center py-8">
+                <div class="w-24 h-24 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mb-6">
+                    <i class="fa-solid fa-check text-4xl text-green-400"></i>
+                </div>
+                <h3 class="text-xl font-black text-white uppercase tracking-widest mb-1 text-gradient">SELAMAT DATANG DI</h3>
+                <h3 class="text-xl font-black text-white uppercase tracking-widest inline-block mt-2 ml-3">DIONIZE PART 2</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Alert Overlay -->
+    <div id="customAlertOverlay" class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm hidden">
+        <div class="bg-slate-900 border border-indigo-500/30 p-8 rounded-3xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(99,102,241,0.2)]">
+            <i class="fa-solid fa-circle-exclamation text-4xl text-yellow-400 mb-4 animate-bounce"></i>
+            <h3 class="text-white font-bold mb-2">Pemberitahuan</h3>
+            <p id="customAlertText" class="text-slate-300 text-sm mb-6 leading-relaxed"></p>
+            <button onclick="closeAlert()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all">Mengerti</button>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl hidden flex flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-md w-full space-y-8">
+            <div class="relative w-40 h-40 mx-auto">
+                <div class="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-t-indigo-500 rounded-full animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-5xl text-indigo-400 animate-pulse"></i>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <h2 class="text-3xl font-black text-white italic tracking-tighter uppercase text-gradient">Innallaha ma'ash shobirin</h2>
+                <p id="loadingStatusText" class="text-indigo-400 font-bold text-xs uppercase tracking-[0.3em]">Merancang Naskah...</p>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-white/5">
+                <div id="progressBar" class="bg-indigo-500 h-full w-0 transition-all duration-300 rounded-full box-shadow-[0_0_20px_rgba(99,102,241,0.5)]"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Support Widget -->
+    <div class="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+        <div id="chatWindow" class="hidden glass-card w-80 md:w-96 rounded-3xl overflow-hidden shadow-2xl border border-indigo-500/20 flex flex-col h-[500px]">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center relative overflow-hidden">
+                <div class="relative z-10 flex items-center gap-3">
+                    <div class="bg-white/20 p-2 rounded-full">
+                        <i class="fa-solid fa-headset text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-white uppercase">DioBot Support</h3>
+                        <p class="text-[9px] text-indigo-200 font-bold tracking-wide">Affiliate Expert</p>
+                    </div>
+                </div>
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                <button onclick="toggleChat()" class="text-white/70 hover:text-white relative z-10"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-900/50 scrollbar-thin scrollbar-thumb-indigo-500/20">
+                <div class="flex gap-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 border border-indigo-500/30">
+                        <i class="fa-solid fa-robot text-indigo-400 text-xs"></i>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-2xl rounded-tl-none border border-white/5 text-xs text-slate-300 leading-relaxed">
+                        Halo! 👋 Saya DioBot, konsultan konten affiliate-mu. Bingung pilih strategi? Upload foto produkmu dan tanyakan padaku!
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-900 border-t border-white/5">
+                <div id="chatPreviewContainer" class="hidden mb-2 relative inline-block">
+                    <img id="chatImgPreview" class="h-16 w-16 object-cover rounded-lg border border-indigo-500/50">
+                    <button onclick="removeChatImage()" class="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <form onsubmit="handleChatSubmit(event)" class="relative flex items-center gap-2">
+                    <label class="cursor-pointer text-slate-400 hover:text-indigo-400 transition-colors p-2">
+                        <i class="fa-solid fa-camera"></i>
+                        <input type="file" id="chatImageInput" accept="image/*" class="hidden" onchange="previewChatImage(this)">
+                    </label>
+                    <input type="text" id="chatInput" placeholder="Tanya atau minta saran strategi..." class="w-full bg-slate-800 text-white text-xs p-3 pr-10 rounded-xl outline-none border border-white/5 focus:border-indigo-500 transition-all">
+                    <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-white transition-colors p-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <button onclick="toggleChat()" class="bg-indigo-600 hover:bg-indigo-500 text-white w-14 h-14 rounded-full shadow-[0_0_30px_rgba(79,70,229,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 group border border-white/10">
+            <i class="fa-solid fa-comment-dots text-xl group-hover:animate-bounce"></i>
+        </button>
+    </div>
+
+    <!-- Navigation Bersih -->
+    <nav class="bg-slate-900/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-[100]">
+        <div class="max-w-[1600px] mx-auto px-6 h-20 flex justify-between items-center relative z-10">
+            <div class="flex items-center gap-4">
+                <div class="bg-gradient-to-br from-indigo-600 to-violet-600 p-2.5 rounded-xl shadow-lg shadow-indigo-600/20 border border-white/10">
+                    <i class="fa-solid fa-camera-retro text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-3xl md:text-4xl text-white uppercase tracking-tighter drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]">
+                        DIONIZE <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400">UGC PART 2</span>
+                    </h1>
+                    <p class="text-[10px] text-slate-400 font-bold tracking-[0.3em] uppercase ml-1 hidden sm:block">v4.7 (32 Strategies Patch)</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-[1600px] mx-auto px-6 py-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div class="lg:col-span-3">
+                <div class="glass-card rounded-[2.5rem] p-8 sticky top-28">
+                    <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Produk Unggulan</label>
+
+                    <div id="dropZone" class="relative group cursor-pointer border-2 border-dashed border-slate-700/50 rounded-3xl overflow-hidden aspect-square bg-slate-900/30 hover:border-indigo-500 hover:bg-indigo-500/5 transition-all">
+                        <input type="file" id="productImage" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="previewAndAnalyze(this)">
+                        <div id="previewContainer" class="hidden absolute inset-0 bg-slate-900">
+                            <img id="imgPreview" class="w-full h-full object-contain p-4">
+                        </div>
+                        <div id="uploadPrompt" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-indigo-400 transition-colors">
+                            <i class="fa-solid fa-images text-3xl mb-3"></i>
+                            <span class="text-[10px] font-black uppercase tracking-widest text-center px-4">Upload Foto Produk</span>
+                            <span class="text-[8px] text-slate-600 font-bold uppercase mt-1 tracking-wider opacity-60">atau Drag & Drop</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Nama Produk (Edit jika perlu)</label>
+                            <input type="text" id="productName" oninput="saveState()" placeholder="Ketik nama produk..." class="w-full bg-slate-900/50 border border-white/5 p-4 rounded-2xl font-bold text-indigo-400 outline-none backdrop-blur-sm focus:border-indigo-500/50 transition-colors">
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Kunci Detail Visual (PENTING!)</label>
+                            <textarea id="productSpecs" oninput="saveState()" rows="3" placeholder="Contoh: Kemeja Lengan Panjang, Warna Navy Blue Gelap, Bahan Katun. (Edit ini agar AI tidak salah warna/bentuk)" class="w-full bg-slate-900/50 border border-white/5 p-3 rounded-2xl font-medium text-[10px] text-indigo-300 outline-none backdrop-blur-sm focus:border-indigo-500/50 transition-colors resize-none"></textarea>
+                        </div>
+
+                        <div class="p-4 bg-slate-900/30 rounded-2xl border border-white/5 space-y-3 backdrop-blur-sm">
+                            <div class="flex items-center gap-2 mb-1 justify-between">
+                                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Karakter / Gender / Suara</label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <select id="modelGender" onchange="toggleHijabOption(); saveState();" class="w-full bg-slate-800 border border-white/5 p-2 rounded-xl text-[10px] text-white outline-none cursor-pointer hover:border-indigo-500/50 transition-colors font-bold">
+                                    <option value="Woman">👩 Wanita / Girl</option>
+                                    <option value="Man">👨 Pria / Boy</option>
+                                </select>
+                                <select id="modelHijab" onchange="saveState()" class="w-full bg-slate-800 border border-white/5 p-2 rounded-xl text-[10px] text-white outline-none cursor-pointer hover:border-indigo-500/50 transition-colors">
+                                    <option value="Non-Hijab">Non-Hijab</option>
+                                    <option value="Hijab">🧕 Berhijab</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Foto Model / Aktor (Opsional)</label>
+                            <div id="dropZoneModel" class="relative group cursor-pointer border-2 border-dashed border-slate-700/50 rounded-2xl overflow-hidden h-20 bg-slate-900/30 hover:border-pink-500 hover:bg-pink-500/5 transition-all">
+                                <input type="file" id="modelImage" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="previewModel(this)">
+                                <div id="previewContainerModel" class="hidden absolute inset-0">
+                                    <img id="modelImgPreview" class="w-full h-full object-cover opacity-80 mix-blend-lighten">
+                                </div>
+                                <div id="uploadPromptModel" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-pink-400 transition-colors">
+                                    <i class="fa-solid fa-user-astronaut text-xl mb-1"></i>
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-center px-4">Upload Wajah Model</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-slate-900/30 rounded-2xl border border-white/5 space-y-3 backdrop-blur-sm">
+                            <div class="flex justify-between items-center mb-1">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-user-tag text-indigo-500 text-xs"></i>
+                                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Gunakan AI Persona</span>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer" title="Matikan jika ingin 100% menggunakan foto model yang di-upload">
+                                    <input type="checkbox" id="togglePersona" class="sr-only peer" checked onchange="togglePersonaState(true)">
+                                    <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0)] peer-checked:shadow-[0_0_15px_rgba(99,102,241,0.4)]"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="personaSettings" class="space-y-2 transition-all duration-300">
+                                <select id="modelAge" onchange="saveState()" class="w-full bg-slate-800 border border-white/5 p-2 rounded-xl text-[10px] text-white outline-none cursor-pointer hover:border-indigo-500/50 transition-colors">
+                                    <option value="Child (5-10 yo)">👶 Anak-anak (5-10 th)</option>
+                                    <option value="Gen Z (20s)">Gen Z / Mahasiswa (20s)</option>
+                                    <option value="Millennial (30s)">Millennial / Pro (30s)</option>
+                                    <option value="Mature (40s+)">Mature / Orang Tua (40s+)</option>
+                                </select>
+                                <input type="text" id="modelStyle" oninput="saveState()" placeholder="Detail: Rambut, Kacamata, Baju..." class="w-full bg-slate-800 border border-white/5 p-3 rounded-xl text-[10px] text-white outline-none placeholder-slate-500 focus:border-indigo-500/50 transition-colors">
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-2 mb-2 justify-between">
+                                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Video Referensi (Opsional)</label>
+                                <span class="bg-blue-500/20 text-blue-400 text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest border border-blue-500/20">NEW</span>
+                            </div>
+                            <div id="dropZoneVideo" class="relative group cursor-pointer border-2 border-dashed border-blue-700/50 rounded-2xl overflow-hidden h-20 bg-slate-900/30 hover:border-blue-500 hover:bg-blue-500/5 transition-all">
+                                <input type="file" id="videoFile" accept="video/mp4,video/webm" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="handleVideoUpload(this)">
+                                <div id="uploadPromptVideo" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 group-hover:text-blue-400 transition-colors">
+                                    <i class="fa-solid fa-film text-xl mb-1"></i>
+                                    <span class="text-[9px] font-black uppercase tracking-widest text-center px-4" id="videoUploadText">Upload Video Viral (MP4)</span>
+                                </div>
+                            </div>
+                            <button onclick="extractVideoScript()" id="btnExtractVideo" class="hidden mt-3 w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl text-[10px] text-white font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-clone"></i> EKSTRAK SCRIPT (DUPLIKAT)
+                            </button>
+                            <video id="hiddenVideo" class="hidden" muted playsinline></video>
+                            <canvas id="hiddenCanvas" class="hidden"></canvas>
+                        </div>
+                        
+                        <div class="p-4 bg-slate-900/30 rounded-2xl border border-white/5 flex justify-between items-center backdrop-blur-sm">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <i class="fa-solid fa-expand text-pink-500 text-xs"></i>
+                                    <span class="text-[10px] font-black text-white uppercase tracking-widest">Veo Extend (32s / 4 Scene)</span>
+                                </div>
+                                <p class="text-[9px] text-slate-400 leading-tight">Perpanjang naskah jadi 4 Scene x 8 Detik.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="toggleExtend" class="sr-only peer" onchange="isExtend30s = this.checked; saveState();">
+                                <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0)] peer-checked:shadow-[0_0_15px_rgba(236,72,153,0.4)]"></div>
+                            </label>
+                        </div>
+
+                        <!-- Dropdown Bahasa dan Reset Pindah ke Sini -->
+                        <div class="p-4 bg-slate-900/30 rounded-2xl border border-white/5 space-y-3 backdrop-blur-sm mt-4">
+                            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Bahasa Target & Kontrol</label>
+                            <div class="flex items-center gap-3">
+                                <!-- Pilihan Bahasa -->
+                                <div class="relative group flex-1">
+                                    <i class="fa-solid fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400 group-hover:animate-spin transition-all"></i>
+                                    <select id="langSelect" onchange="saveState()" class="w-full bg-slate-800 border border-white/5 pl-10 pr-8 py-3 rounded-xl text-[10px] text-white font-bold uppercase tracking-widest outline-none cursor-pointer hover:border-indigo-500/50 transition-colors appearance-none relative z-10 shadow-inner">
+                                        <option value="id">Bahasa Indonesia</option>
+                                        <option value="ms">Malaysia (Melayu)</option>
+                                        <option value="th">Thailand (Thai)</option>
+                                        <option value="vi">Vietnam (Tiếng Việt)</option>
+                                        <option value="tl">Filipina (Tagalog/Filipino)</option>
+                                        <option value="sg">Singapore (English)</option>
+                                        <option value="ko">Korea (Hangul)</option>
+                                        <option value="zh">China (Mandarin)</option>
+                                        <option value="en">English (Global)</option>
+                                    </select>
+                                    <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-white/50 text-[10px] pointer-events-none z-20"></i>
+                                </div>
+                                <!-- Tombol Reset -->
+                                <button onclick="resetApp()" title="Reset & Mulai Ulang" class="shrink-0 text-red-400 hover:text-white bg-red-500/10 hover:bg-red-500 p-3 rounded-xl transition-all border border-red-500/30 hover:border-red-500 shadow-lg flex items-center justify-center h-full aspect-square">
+                                    <i class="fa-solid fa-rotate-right"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mt-4">
+                            <button onclick="initStrategies()" id="btnInit" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 py-5 rounded-2xl text-white font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 transition-all active:scale-95 disabled:opacity-50 border border-white/10 relative overflow-hidden group">
+                                <span class="relative z-10" id="btnInitText">TAMPILKAN 32 STRATEGI</span>
+                                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                            </button>
+
+                            <button onclick="generateAllStrategies()" id="btnGenAll" class="hidden w-full bg-slate-800 hover:bg-slate-700 py-4 rounded-2xl text-[10px] text-white font-bold uppercase tracking-widest transition-all border border-white/10 active:scale-95 flex items-center justify-center gap-2 group shadow-lg">
+                                <i class="fa-solid fa-bolt text-yellow-400 group-hover:scale-125 transition-transform"></i>
+                                <span>GENERATE SEMUA</span>
+                            </button>
+                        </div>
+
+                        <div class="mt-6 p-4 rounded-2xl bg-gradient-to-br from-amber-900/40 to-orange-900/20 border border-orange-500/30 text-center relative overflow-hidden group backdrop-blur-md">
+                            <div class="absolute inset-0 bg-orange-500/10 blur-xl group-hover:bg-orange-500/20 transition-all duration-500"></div>
+                            <div class="relative z-10">
+                                <h3 class="text-[10px] font-black text-orange-300 uppercase tracking-widest mb-3 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-mug-hot"></i> Support Creator
+                                </h3>
+                                <div class="bg-white p-2 rounded-xl inline-block shadow-lg mb-2 transform group-hover:scale-105 transition-transform duration-300">
+                                    <img src="https://r0.image2url.com/uploads/3f95f18fff861ac2_compressed_ac342ca2deaeff4b.png" alt="QRIS Traktir Kopi" class="w-44 h-44 object-contain">
+                                </div>
+                                <p class="text-[8px] text-orange-200/80 font-medium tracking-wide">Scan QRIS untuk traktir kopi ☕</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-9">
+                <div id="strategyGrid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-10"></div>
+
+                <div id="emptyState" class="h-[60vh] flex flex-col items-center justify-center text-center glass-card rounded-[3rem]">
+                    <div class="w-24 h-24 bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(99,102,241,0.2)] border border-indigo-500/20">
+                        <i class="fa-solid fa-wand-magic-sparkles text-3xl text-indigo-400 animate-pulse"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-white uppercase italic tracking-tighter mb-2 text-gradient">Ready to Maximize Visuals</h3>
+                    <p class="text-slate-400 text-sm max-w-sm leading-relaxed">Sistem akan merancang variasi naskah dengan spesifikasi Google Veo 3.1 & pembagian Scene konstan 8 detik.</p>
+                </div>
+
+                <div id="outputArea"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const apiKey = ""; 
+        const MODEL_IMAGE_FREE = "gemini-3.1-flash-image-preview";
+        const MODEL_IMAGEN_FALLBACK = "imagen-3.0-generate-001";
+        const MODEL_TEXT_ENGINE = "gemini-2.5-flash-preview-09-2025";
+        
+        let base64Image = null;
+        let previewImgSrc = null; 
+        let base64ModelImage = null; 
+        let previewModelImgSrc = null;
+        let videoFrames = []; 
+        let productDescription = "";
+        let visualSpecs = "";
+        let variations = [];
+        let activeIdx = 0;
+        let isProcessingQueue = false;
+        let isExtend30s = false; 
+
+        // Chat Support Variables
+        let chatBase64Image = null;
+
+        function showAlert(msg) {
+            const overlay = document.getElementById('customAlertOverlay');
+            const textEl = document.getElementById('customAlertText');
+            if (overlay && textEl) {
+                textEl.innerText = msg;
+                overlay.classList.remove('hidden');
+            } else {
+                alert(msg);
+            }
+        }
+
+        function closeAlert() {
+            const overlay = document.getElementById('customAlertOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        function processLogin(e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('loginEmail').value.trim();
+            const emailPattern = /^.{4,}@gmail\.com$/i;
+            const loginBox = document.getElementById('loginBox');
+
+            if (!emailPattern.test(emailInput)) {
+                loginBox.classList.add('animate-[shake_0.5s_ease-in-out]');
+                setTimeout(() => loginBox.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                showAlert("Akses ditolak. Email tidak valid. Silakan hubungi Admin.");
+                return;
+            }
+
+            localStorage.setItem('dionizeValidUser', emailInput);
+            document.getElementById('loginContent').classList.add('hidden');
+            document.getElementById('loginSuccess').classList.remove('hidden');
+            document.getElementById('loginSuccess').classList.add('flex');
+            setTimeout(() => { document.getElementById('gatekeeper').classList.add('hidden-smooth'); }, 2000);
+        }
+
+        function checkLoginState() {
+            const isValid = localStorage.getItem('dionizeValidUser');
+            if (isValid) document.getElementById('gatekeeper').style.display = 'none';
+        }
+
+        const STRATEGIES = [
+            { id: 0, name: "Unboxing", desc: "Fokus pada pengemasan & antusiasme membuka paket" },
+            { id: 1, name: "Honest Review", desc: "Bandingkan masalah dengan solusi secara jujur" },
+            { id: 2, name: "Tutorial", desc: "Langkah demi langkah untuk hasil terbaik" },
+            { id: 3, name: "A Day In Life", desc: "Integrasi produk dalam gaya hidup estetik" },
+            { id: 4, name: "Virtual Try On", desc: "Transisi instan & pamer fashion/kecantikan" },
+            { id: 5, name: "Reverse Psychology", desc: "Mulai dengan kalimat 'Jangan Beli Ini!'" },
+            { id: 6, name: "ASMR/Sensory", desc: "Fokus pada suara mikro & tekstur detail" },
+            { id: 7, name: "The Dupe", desc: "Bandingkan produk mahal dengan produk ini" },
+            { id: 8, name: "FOMO Flash Sale", desc: "Peringatan diskon besar & urgensi habis" },
+            { id: 9, name: "POV: Solusi", desc: "Perjuangan *relatable* -> perbaikan instan" },
+            { id: 10, name: "Visual Demo Ads", desc: "Bukti produk langsung & extreme close-ups" },
+            { id: 11, name: "Aesthetic Tour", desc: "B-roll sinematik & vibe yang menenangkan" },
+            { id: 12, name: "Q&A Reply", desc: "Menjawab pertanyaan menarik komentar netizen" },
+            { id: 13, name: "Expect vs Reality", desc: "Kontras ekspektasi buruk dan hasil luar biasa" },
+            { id: 14, name: "8-Second Hook", desc: "Visual berkelanjutan 8 detik penuh di awal" },
+            { id: 15, name: "Fake Factory", desc: "Gudang sibuk, tumpukan paket, FOMO harga pabrik" },
+            { id: 16, name: "POV Hands-Only", desc: "Sudut pandang faceless, ASMR tangan & produk" },
+            { id: 17, name: "Before & After", desc: "Transisi dramatis masalah ke solusi nyata" },
+            { id: 18, name: "POV: Silent Try-On", desc: "Fokus ke fit baju di cermin, tanpa wajah." },
+            { id: 19, name: "POV: Fabric Detail", desc: "Extreme close-up kualitas kain." },
+            { id: 20, name: "Pack Orders", desc: "POV Seller packing, estetik & satisfying" },
+            { id: 21, name: "GRWM Storytime", desc: "Styling/Makeup sambil cerita engaging" },
+            { id: 22, name: "Satisfying Restock", desc: "ASMR visual menata/refill produk" },
+            { id: 23, name: "The Secret Hack", desc: "Bongkar cara pakai 'rahasia' hasil maksimal" },
+            { id: 24, name: "Blind Reaction", desc: "Reaksi orang ketiga (suami/teman)" },
+            { id: 25, name: "Breaking News", desc: "Berita TV viral, rusuh antrean, & wawancara" },
+            { id: 26, name: "The Mythbuster", desc: "Bongkar mitos/komen nyinyir dgn bukti brutal" },
+            { id: 27, name: "Empties Review", desc: "Review botol kosong bukti pemakaian nyata" },
+            { id: 28, name: "Gatekeeping Secret", desc: "Bisik-bisik bocorin rahasia produk elit yg disembunyikan" },
+            { id: 29, name: "The Upgrade", desc: "Buang barang lama ke tong sampah, pamer produk ini" },
+            { id: 30, name: "Price Drop Challenge", desc: "Tebak harga dari mahal ke murah dengan interaksi kasual" },
+            { id: 31, name: "Street Interview POV", desc: "Wawancara jalanan kasual, social proof hiperbolis & FOMO" },
+            { id: 32, name: "🔥 Duplikat Video", desc: "Kloning alur dari video MP4 yang diupload" }
+        ];
+
+        function saveState() {
+            try {
+                const state = {
+                    previewImgSrc, base64Image, previewModelImgSrc, base64ModelImage, productDescription,
+                    productName: document.getElementById('productName').value,
+                    productSpecs: document.getElementById('productSpecs').value,
+                    lang: document.getElementById('langSelect').value,
+                    togglePersona: document.getElementById('togglePersona').checked,
+                    modelGender: document.getElementById('modelGender').value,
+                    modelHijab: document.getElementById('modelHijab').value,
+                    modelAge: document.getElementById('modelAge').value,
+                    modelStyle: document.getElementById('modelStyle').value,
+                    toggleExtend: document.getElementById('toggleExtend').checked,
+                    isExtend30s, variations, activeIdx
+                };
+                try { localStorage.setItem('dionizeUGCState', JSON.stringify(state)); } 
+                catch (e) {
+                    const lightState = JSON.parse(JSON.stringify(state)); 
+                    if (lightState.variations) { lightState.variations.forEach(v => { if (v && v.scenes) v.scenes.forEach(s => { s.img = null; }); }); }
+                    try { localStorage.setItem('dionizeUGCState', JSON.stringify(lightState)); } 
+                    catch (e2) {
+                        lightState.previewImgSrc = null; lightState.base64Image = null;
+                        lightState.previewModelImgSrc = null; lightState.base64ModelImage = null;
+                        localStorage.setItem('dionizeUGCState', JSON.stringify(lightState));
+                    }
+                }
+            } catch (error) {}
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('dionizeUGCState');
+                if (saved) {
+                    const state = JSON.parse(saved);
+                    if(state.previewImgSrc) {
+                        previewImgSrc = state.previewImgSrc; base64Image = state.base64Image;
+                        document.getElementById('imgPreview').src = previewImgSrc;
+                        document.getElementById('previewContainer').classList.remove('hidden');
+                        document.getElementById('uploadPrompt').classList.add('hidden');
+                    }
+                    if(state.previewModelImgSrc) {
+                        previewModelImgSrc = state.previewModelImgSrc; base64ModelImage = state.base64ModelImage;
+                        document.getElementById('modelImgPreview').src = previewModelImgSrc;
+                        document.getElementById('previewContainerModel').classList.remove('hidden');
+                        document.getElementById('uploadPromptModel').classList.add('hidden');
+                    }
+                    productDescription = state.productDescription || "";
+                    document.getElementById('productName').value = state.productName || "";
+                    document.getElementById('productSpecs').value = state.productSpecs || "";
+                    if(state.lang) document.getElementById('langSelect').value = state.lang;
+                    if(state.modelGender) document.getElementById('modelGender').value = state.modelGender;
+                    if(state.modelHijab) document.getElementById('modelHijab').value = state.modelHijab;
+                    if(state.modelAge) document.getElementById('modelAge').value = state.modelAge;
+                    if(state.modelStyle) document.getElementById('modelStyle').value = state.modelStyle;
+                    if(state.hasOwnProperty('togglePersona')) {
+                        document.getElementById('togglePersona').checked = state.togglePersona; togglePersonaState(false); 
+                    }
+                    if(state.hasOwnProperty('toggleExtend')) {
+                        document.getElementById('toggleExtend').checked = state.toggleExtend; isExtend30s = state.isExtend30s;
+                    }
+                    if (state.variations && state.variations.length > 0) {
+                        variations = state.variations.map(v => {
+                            if (!v.status) {
+                                if (v.error) return { ...v, status: 'error' };
+                                if (v.ready) return { ...v, status: 'ready' };
+                                return { ...v, status: 'idle' };
+                            }
+                            return v;
+                        });
+                        document.getElementById('emptyState').classList.add('hidden');
+                        document.getElementById('strategyGrid').classList.remove('hidden');
+                        document.getElementById('btnGenAll').classList.remove('hidden');
+                        document.getElementById('btnInitText').innerText = 'PERBARUI PENGATURAN';
+                        activeIdx = state.activeIdx || 0;
+                        renderStrategyGrid(); renderActive(); processImageQueue(); 
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function resetApp() {
+            // Hapus memori penyimpanan state UGC
+            localStorage.removeItem('dionizeUGCState');
+            
+            // 1. Reset semua variabel global
+            base64Image = null; previewImgSrc = null; 
+            base64ModelImage = null; previewModelImgSrc = null;
+            videoFrames = []; productDescription = ""; visualSpecs = "";
+            variations = []; activeIdx = 0; isProcessingQueue = false; isExtend30s = false;
+            chatBase64Image = null;
+
+            // 2. Kosongkan input file (agar file yang sama bisa dipilih lagi)
+            document.getElementById('productImage').value = '';
+            document.getElementById('modelImage').value = '';
+            document.getElementById('videoFile').value = '';
+            document.getElementById('chatImageInput').value = '';
+
+            // 3. Kembalikan UI Preview Gambar ke kondisi awal
+            document.getElementById('imgPreview').src = '';
+            document.getElementById('previewContainer').classList.add('hidden');
+            document.getElementById('uploadPrompt').classList.remove('hidden');
+
+            document.getElementById('modelImgPreview').src = '';
+            document.getElementById('previewContainerModel').classList.add('hidden');
+            document.getElementById('uploadPromptModel').classList.remove('hidden');
+            
+            document.getElementById('chatImgPreview').src = '';
+            document.getElementById('chatPreviewContainer').classList.add('hidden');
+
+            // 4. Kosongkan semua teks input
+            document.getElementById('productName').value = '';
+            document.getElementById('productSpecs').value = '';
+            document.getElementById('modelStyle').value = '';
+            document.getElementById('chatInput').value = '';
+
+            // 5. Kembalikan Dropdown ke posisi pertama (default)
+            document.getElementById('modelGender').selectedIndex = 0;
+            document.getElementById('modelHijab').selectedIndex = 0;
+            document.getElementById('modelAge').selectedIndex = 0;
+            document.getElementById('langSelect').selectedIndex = 0;
+
+            // 6. Reset Toggle (Centang)
+            document.getElementById('togglePersona').checked = true;
+            togglePersonaState(false);
+            toggleHijabOption();
+            document.getElementById('toggleExtend').checked = false;
+
+            // 7. Reset Area Video Clone
+            document.getElementById('videoUploadText').innerText = "Upload Video Viral (MP4)";
+            document.getElementById('uploadPromptVideo').classList.remove('text-blue-400');
+            document.getElementById('btnExtractVideo').classList.add('hidden');
+
+            // 8. Bersihkan Area Hasil Naskah
+            document.getElementById('emptyState').classList.remove('hidden');
+            document.getElementById('strategyGrid').classList.add('hidden');
+            document.getElementById('btnGenAll').classList.add('hidden');
+            document.getElementById('btnInitText').innerText = 'TAMPILKAN 32 STRATEGI';
+            document.getElementById('outputArea').innerHTML = '';
+
+            // Tampilkan notifikasi keberhasilan tanpa reload
+            showAlert("Aplikasi berhasil direset. Anda siap memulai project baru tanpa perlu login ulang!");
+        }
+
+        async function handleVideoUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const textEl = document.getElementById('videoUploadText');
+            textEl.innerText = "Mengekstrak Frame (Tunggu)...";
+            document.getElementById('uploadPromptVideo').classList.add('animate-pulse');
+            
+            const videoUrl = URL.createObjectURL(file);
+            const video = document.getElementById('hiddenVideo');
+            const canvas = document.getElementById('hiddenCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            video.src = videoUrl;
+            videoFrames = [];
+
+            video.onloadedmetadata = async () => {
+                const ratio = video.videoHeight / video.videoWidth;
+                canvas.width = Math.min(640, video.videoWidth); canvas.height = canvas.width * ratio;
+                const duration = video.duration;
+                const timestamps = [duration*0.1, duration*0.3, duration*0.5, duration*0.7, duration*0.9];
+                
+                for(let t of timestamps) {
+                    video.currentTime = t;
+                    await new Promise(r => { video.onseeked = r; });
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    videoFrames.push(canvas.toDataURL('image/jpeg', 0.6).split(',')[1]);
+                }
+                document.getElementById('uploadPromptVideo').classList.remove('animate-pulse');
+                textEl.innerText = "Video Siap Diduplikat! ✓";
+                document.getElementById('uploadPromptVideo').classList.add('text-blue-400');
+                document.getElementById('btnExtractVideo').classList.remove('hidden');
+            };
+        }
+
+        async function extractVideoScript() {
+            const product = document.getElementById('productName').value;
+            if(!product || product === "Menganalisis..." || !base64Image) {
+                showAlert("Harap upload foto produk dan biarkan AI menganalisis terlebih dahulu sebelum menduplikat video."); return;
+            }
+            if(videoFrames.length < 5) {
+                showAlert("Proses ekstraksi video gagal atau belum selesai. Coba upload ulang MP4 nya."); return;
+            }
+            if(variations.length === 0) {
+                variations = STRATEGIES.map(s => ({ name: s.name, status: 'idle', scenes: [] }));
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('strategyGrid').classList.remove('hidden');
+            } else if (variations.length === 32) {
+                variations.push({ name: STRATEGIES[32].name, status: 'idle', scenes: [] });
+            }
+
+            activeIdx = 32; 
+            variations[activeIdx].status = 'loading';
+            renderStrategyGrid(); renderActive();
+
+            const safeProduct = sanitizeInput(product);
+            const safeVisualSpecs = sanitizeInput(document.getElementById('productSpecs').value); 
+            const lang = document.getElementById('langSelect').value;
+            let langPrompt = "English"; let captionLang = "English"; let ctaTerm = "Yellow Basket";
+            switch(lang) {
+                case 'id': langPrompt = "Indonesian"; captionLang = "Indonesian"; ctaTerm = "Keranjang Belanja"; break;
+                case 'ms': langPrompt = "Malay"; captionLang = "Malay"; ctaTerm = "Beg Kuning"; break;
+                case 'th': langPrompt = "Thai"; captionLang = "Thai"; ctaTerm = "ตะกร้า"; break;
+                case 'vi': langPrompt = "Vietnamese"; captionLang = "Vietnamese"; ctaTerm = "Giỏ Hàng"; break;
+                case 'tl': langPrompt = "Tagalog/Filipino"; captionLang = "Tagalog/Filipino"; ctaTerm = "Yellow Basket"; break;
+                default: langPrompt = "English"; captionLang = "English"; ctaTerm = "Yellow Basket";
+            }
+            const durationText = isExtend30s ? "32-second (4 Scenes of 8s each)" : "16-second (2 Scenes of 8s each)";
+
+            let scenesTemplate = isExtend30s ? `[
+              { "t": "00:00-00:08", "v": "VEO PROMPT: Continuous 8-second tracking sequence starting with the action ALREADY happening. Clone exact visual hook, camera angle from FRAME 1 & 2. Feature MY PRODUCT [${safeVisualSpecs}]", "a": "Extended Hook Dialogue in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+              { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence starting with the action ALREADY in progress. Clone core action in FRAME 3. Feature MY PRODUCT [${safeVisualSpecs}].", "a": "Body Dialogue 1 in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+              { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence starting directly in the visual state of FRAME 4. Feature MY PRODUCT [${safeVisualSpecs}]", "a": "Emotional payoff in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+              { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence starting directly with the exact ending/CTA visual vibe from FRAME 5. Feature MY PRODUCT [${safeVisualSpecs}]", "a": "CTA Dialogue in ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words to perfectly fill 8s)" }
+            ]` : `[
+              { "t": "00:00-00:08", "v": "VEO PROMPT: Continuous 8-second tracking sequence starting with the action ALREADY happening. Clone exact visual hook from FRAME 1, 2, and 3. Feature MY PRODUCT [${safeVisualSpecs}]", "a": "Extended Hook Dialogue in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+              { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence starting with the action ALREADY in progress. Clone exact ending from FRAME 4 and 5. Feature MY PRODUCT [${safeVisualSpecs}]", "a": "Result & CTA Dialogue in ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words to perfectly fill 8s)" }
+            ]`;
+
+            let textPrompt = `ACT AS: Master Video Reverse-Engineer & Google Veo 3.1 Prompt Expert.
+            TASK: You will see 5 chronological keyframes representing the FULL duration of a viral video. Then, an image of MY PRODUCT.
+            GOAL: Clone exact visual narrative, compressing or expanding to fit a ${durationText} format featuring MY PRODUCT. ALL SCENES EXACTLY 8 SECONDS LONG.
+            STRICT JSON FORMAT: {"name": "🔥 Duplikat Kloning", "social_caption": "...", "editor_notes": {"speed": "...", "music": "..."}, "scenes": ${scenesTemplate}}`;
+
+            let partsContent = [{ text: textPrompt }];
+            videoFrames.forEach(frame => { partsContent.push({ inlineData: { mimeType: "image/jpeg", data: frame } }); });
+            partsContent.push({ inlineData: { mimeType: "image/png", data: base64Image } });
+
+            let data = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT_ENGINE}:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: partsContent }], generationConfig: { responseMimeType: "application/json" } })
+                    });
+                    const textRes = await res.text();
+                    data = JSON.parse(extractJSON(JSON.parse(textRes).candidates[0].content.parts[0].text)); break;
+                } catch(e) { if (attempt < 3) await new Promise(r => setTimeout(r, 2000)); }
+            }
+
+            if (!data) {
+                variations[activeIdx] = { name: STRATEGIES[32].name, status: 'error', error: true, social_caption: "Gagal membedah video.", editor_notes: { speed: "N/A", music: "N/A" }, scenes: [] };
+            } else {
+                data.editor_notes = data.editor_notes || { speed: "Sesuai Referensi", music: "Trending Audio" };
+                data.scenes = data.scenes || []; data.name = STRATEGIES[32].name; data.status = 'ready'; data.error = false; variations[activeIdx] = data; 
+            }
+
+            renderStrategyGrid(); renderActive(); saveState(); if (data) processImageQueue(); 
+        }
+
+        function initStrategies() {
+            const product = document.getElementById('productName').value;
+            if(!product || product === "Menganalisis...") { showAlert("Harap upload foto produk terlebih dahulu."); return; }
+            variations = STRATEGIES.slice(0, 32).map(s => ({ name: s.name, status: 'idle', scenes: [] }));
+            if(videoFrames.length === 5) variations.push({ name: STRATEGIES[32].name, status: 'idle', scenes: [] });
+
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('strategyGrid').classList.remove('hidden');
+            document.getElementById('btnGenAll').classList.remove('hidden');
+            document.getElementById('btnInitText').innerText = 'PERBARUI PENGATURAN';
+            activeIdx = 0; renderStrategyGrid(); renderActive(); saveState();
+        }
+
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let lastResponse;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    lastResponse = response;
+                    if (response.status === 400 || response.status === 401 || response.status === 403) return response; 
+                } catch (err) { if (i === maxRetries - 1) throw err; }
+                await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
+            }
+            if (lastResponse) return lastResponse; throw new Error('Max retries reached');
+        }
+
+        function extractJSON(str) {
+            if (!str) return "{}";
+            let cleanStr = str.replace(/^```json\s*/im, '').replace(/^```\s*/im, '').replace(/```\s*$/im, '').trim();
+            try { JSON.parse(cleanStr); return cleanStr; } catch (e) {
+                let startObj = cleanStr.indexOf('{'); if (startObj === -1) return "{}";
+                let depth = 0, inString = false, escape = false;
+                for (let i = startObj; i < cleanStr.length; i++) {
+                    let char = cleanStr[i];
+                    if (inString) { if (escape) escape = false; else if (char === '\\') escape = true; else if (char === '"') inString = false; } 
+                    else {
+                        if (char === '"') inString = true; else if (char === '{') depth++; else if (char === '}') depth--;
+                        if (depth === 0) return cleanStr.substring(startObj, i + 1);
+                    }
+                }
+            } return cleanStr;
+        }
+
+        function sanitizeInput(str) { return str ? str.split('"').join('').split('\\').join('').split('\n').join(' ').split('\r').join(' ') : ""; }
+
+        async function previewAndAnalyze(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                previewImgSrc = e.target.result; base64Image = e.target.result.split(',')[1];
+                document.getElementById('imgPreview').src = previewImgSrc;
+                document.getElementById('previewContainer').classList.remove('hidden');
+                document.getElementById('uploadPrompt').classList.add('hidden');
+                document.getElementById('productName').value = "Menganalisis...";
+                document.getElementById('productSpecs').value = "Menganalisis warna & bentuk..."; saveState();
+
+                let data = null;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT_ENGINE}:generateContent?key=${apiKey}`, {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: `Identify this product visually. Return JSON ONLY: {"name": "Product Name", "features": "Key highlights", "visual_specs": "Strict visual description"}` }, { inlineData: { mimeType: "image/png", data: base64Image } }] }],
+                                generationConfig: { responseMimeType: "application/json" }
+                            })
+                        });
+                        const textRes = await res.text();
+                        data = JSON.parse(extractJSON(JSON.parse(textRes).candidates[0].content.parts[0].text)); break;
+                    } catch (err) { if (attempt < 3) await new Promise(r => setTimeout(r, 2000)); }
+                }
+                if (data) {
+                    document.getElementById('productName').value = data.name || "";
+                    productDescription = data.features || ""; document.getElementById('productSpecs').value = data.visual_specs || ""; 
+                } else {
+                    document.getElementById('productName').value = "Gagal Deteksi"; document.getElementById('productSpecs').value = "";
+                } saveState();
+            }; reader.readAsDataURL(file);
+        }
+
+        async function generateStrategyText(index, isBatch = false) {
+            const product = document.getElementById('productName').value;
+            const visualSpecsInput = document.getElementById('productSpecs').value; 
+            const lang = document.getElementById('langSelect').value;
+            const style = document.getElementById('modelStyle').value || "Pakaian kasual bergaya";
+
+            const safeProduct = sanitizeInput(product); const safeVisualSpecs = sanitizeInput(visualSpecsInput);
+            const safeStyle = sanitizeInput(style); const safeDesc = sanitizeInput(productDescription);
+
+            const gender = document.getElementById('modelGender').value;
+            const hijab = document.getElementById('modelHijab').value;
+            const age = document.getElementById('modelAge').value;
+
+            let langPrompt = "English"; let captionLang = "English"; let ctaTerm = "Yellow Basket";
+            switch(lang) {
+                case 'id': langPrompt = "Indonesian"; captionLang = "Indonesian"; ctaTerm = "Keranjang Belanja"; break;
+                case 'ms': langPrompt = "Malay"; captionLang = "Malay"; ctaTerm = "Beg Kuning"; break;
+                case 'th': langPrompt = "Thai"; captionLang = "Thai"; ctaTerm = "ตะกร้า"; break;
+                case 'vi': langPrompt = "Vietnamese"; captionLang = "Vietnamese"; ctaTerm = "Giỏ Hàng"; break;
+                case 'tl': langPrompt = "Tagalog/Filipino"; captionLang = "Tagalog/Filipino"; ctaTerm = "Yellow Basket"; break;
+                default: langPrompt = "English"; captionLang = "English"; ctaTerm = "Yellow Basket";
+            }
+
+            const isPersonaOn = document.getElementById('togglePersona').checked;
+            let personaDesc = "";
+            const handDesc = gender === 'Woman' ? 'DELICATE FEMININE WOMAN HANDS' : 'STRONG MASCULINE MAN HANDS';
+            const voiceDesc = gender === 'Woman' ? 'FEMALE WOMAN voice' : 'MALE MAN voice';
+
+            if (index === 16 || index === 18 || index === 19 || index === 20 || index === 22) {
+                personaDesc = `CRITICAL: STRICTLY HANDS ONLY. NO PERSONA. DO NOT INCLUDE ANY FACIAL OR BODY DESCRIPTIONS. JUST ${handDesc} HOLDING OR INTERACTING WITH THE PRODUCT.`;
+            } else if (isPersonaOn) {
+                let finalGenderTerm = gender;
+                if (age.includes('Child')) finalGenderTerm = (gender === 'Woman') ? 'Little Girl' : 'Little Boy';
+                personaDesc = `[CHARACTER IDENTITY: Asian ${finalGenderTerm}, ${age}`;
+                if(gender === 'Woman' && hijab === 'Hijab') personaDesc += `, wearing a specific colored Hijab`;
+                else if (gender === 'Woman') personaDesc += `, distinct specific hairstyle`; 
+                if(safeStyle) personaDesc += `, wearing exactly: ${safeStyle}`; else personaDesc += `, wearing a recognizable casual outfit`;
+                personaDesc += `] -> (CRITICAL: Maintain this EXACT SAME character's face, hair, and clothing continuously across all scenes)`;
+            } else {
+                personaDesc = `(CRITICAL: THE EXACT SAME CHARACTER(S) FROM THE UPLOADED MODEL REFERENCE IMAGE. Maintain exact identity, face, and clothing across all scenes)`;
+            }
+
+            let extendGuidance = "\n- KESINAMBUNGAN (KRITIKAL): Peralihan antar Babak MESTI merupakan pukulan kamera berterusan (continuous camera tracking). Pastikan aksi bersambung dengan natural dan tidak terputus.";
+            const durationText = isExtend30s ? "32-second" : "16-second";
+            const timeLimit = "EACH SCENE IS EXACTLY 8 SECONDS. THE DIALOGUE/VOICEOVER FOR EACH SCENE MUST BE EXACTLY 15-20 WORDS LONG TO PREVENT AWKWARD SILENCES IN GOOGLE VEO.";
+
+            variations[index].status = 'loading';
+            if (!isBatch) { renderStrategyGrid(); if(activeIdx === index) renderActive(); }
+
+            let scenesStructure = "";
+
+            if (index === 15) {
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16. Continuous 8-second sequence starting with workers ALREADY actively packing hundreds of [${safeVisualSpecs}]. Bright factory setting, overstock concept.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Gila! Pabrik lagi overstok parah sampai bosnya rugi bandar ngasih harga promo segini murahnya buat kalian yang nonton..." },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second extreme macro close-up sequence starting with thick, luxurious [${safeVisualSpecs}] ALREADY actively dripping or showing highly detailed premium texture.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Padahal tekstur aslinya se-premium ini lho bro, kental banget, wangi, dan gampang meresap ke dalam kulit tanpa rasa lengket." },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY actively applying [${safeVisualSpecs}] and showing flawless, radiant, glowing skin. Smiling confidently. Natural sunlight.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Jujur gak nyangka harganya bisa anjlok, padahal sekali pakai aja muka langsung auto glass skin glowing parah kayak gini!" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence starting with a worker ALREADY slapping a shipping label onto a box of [${safeVisualSpecs}]. Fast pan across mountain of packages.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Liat nih paket yang antre dikirim hari ini aja numpuk! Buruan sikat di ${ctaTerm} sebelum harganya dibalikin normal besok!" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16. Continuous 8-second sequence starting with workers ALREADY actively packing hundreds of [${safeVisualSpecs}]. Bright factory setting, overstock concept.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Pabrik lagi overstok parah, bos sampai rugi bandar ngasih harga segini murahnya buat kalian!" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second extreme macro close-up sequence starting with thick, luxurious [${safeVisualSpecs}].", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Kualitas tetap premium! Buruan sikat di ${ctaTerm} sebelum harganya dibalikin normal besok!" }
+                ]`;
+            } else if (index === 25) {
+                // STRATEGI 25: BREAKING NEWS (CLEAN STUDIO)
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic 9:16. Clean minimalist studio. MODEL (${personaDesc}) acting as a professional presenter sitting at a modern desk. Behind them is a large screen showing a blurry image of [${safeVisualSpecs}]. ABSOLUTELY NO TEXT OVERLAYS, NO BANNERS, NO LOWER-THIRDS. Serious reporting expression.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Berita mengejutkan hari ini pemirsa. Warga dihebohkan dengan viralnya sebuah produk fenomenal yang ludes di pasaran." },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Handheld smartphone camera style, slight realistic shake. A chaotic scene inside a retail store where a crowd of faceless people are aggressively grabbing and fighting over [${safeVisualSpecs}] from the shelves. DO NOT SHOW THE MAIN MODEL.", "a": "News Anchor Voiceover translating to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Rekaman amatir ini menunjukkan fenomena antrean panjang dan warga yang berebut stok produk tersebut di berbagai toko ritel." },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Street interview style. Medium close up. A completely DIFFERENT random citizen (DO NOT USE MAIN MODEL) enthusiastically holding [${safeVisualSpecs}] and talking directly to the camera. ABSOLUTELY NO TEXT OVERLAYS.", "a": "Interviewee Testimonial translating to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Wah gila sih, aku udah pakai ini sebulan dan hasilnya emang se-ngaruh itu, pantesan pada rebutan beli!" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Back to the minimalist studio. MODEL (${personaDesc}) as the presenter at the desk, pointing urgently towards the camera while holding [${safeVisualSpecs}]. ABSOLUTELY NO TEXT OVERLAYS.", "a": "News Anchor Voiceover translating to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Bagi Anda yang tidak ingin kehabisan, disarankan untuk segera mengeklik ${ctaTerm} sebelum stok benar-benar kosong." }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic 9:16. Clean minimalist studio. MODEL (${personaDesc}) acting as a professional presenter sitting at a modern desk reporting urgently. Screen behind shows [${safeVisualSpecs}]. ABSOLUTELY NO TEXT OVERLAYS, NO BANNERS, NO NEWS GRAPHICS.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Berita mengejutkan! Warga dihebohkan dengan viralnya produk fenomenal ini yang ludes di pasaran dan memicu antrean." },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Handheld smartphone camera style, slight shake. A chaotic scene inside a retail store where a crowd of people are aggressively grabbing and fighting over [${safeVisualSpecs}]. DO NOT SHOW THE MAIN MODEL.", "a": "News Anchor Voiceover translating to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Fenomena ini terjadi karena kualitasnya. Pemirsa diharap segera mengamankan stok di ${ctaTerm} sekarang sebelum kehabisan!" }
+                ]`;
+            } else if (index === 20) {
+                // STRATEGI 20: PACK ORDERS (HANDS ONLY)
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: First-person POV. Continuous 8-second tracking shot starting with hands ALREADY actively packing [${safeVisualSpecs}] into a shipping box. NO FACES VISIBLE.", "a": "Hook Dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: First-person POV. Continuous 8-second shot. Hands ALREADY actively wrapping [${safeVisualSpecs}] with bubble wrap or adding a thank you card. NO FACES VISIBLE.", "a": "Body Dialogue 1 in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: First-person POV. Continuous 8-second shot. Hands ALREADY actively sealing the box containing [${safeVisualSpecs}] with tape. NO FACES VISIBLE.", "a": "Proof Dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: First-person POV. Continuous 8-second shot. Hands ALREADY actively placing a shipping label on the finished package of [${safeVisualSpecs}]. NO FACES VISIBLE.", "a": "Urgency and CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: First-person POV. Continuous 8-second tracking shot starting with hands ALREADY actively packing [${safeVisualSpecs}] into a shipping box. NO FACES VISIBLE.", "a": "Hook & Value Dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: First-person POV. Continuous 8-second shot. Hands ALREADY actively sealing the package containing [${safeVisualSpecs}] with tape. NO FACES VISIBLE.", "a": "Result & CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]`;
+            } else if (index === 26) {
+                // STRATEGI 26: THE MYTHBUSTER
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second tracking shot. MODEL (${personaDesc}) ALREADY pointing directly at the camera/screen with a challenging, confident smirk, holding [${safeVisualSpecs}]. Reading an invisible hater comment.", "a": "Reading a hater comment dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY actively demonstrating the extreme, brutal proof of [${safeVisualSpecs}] performance.", "a": "Proving wrong dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Extreme macro close-up. Continuous 8-second sequence ALREADY showing the undeniable, high-quality result/texture of [${safeVisualSpecs}].", "a": "Explaining the fact dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY looking extremely satisfied and victorious, holding [${safeVisualSpecs}].", "a": "Victory and CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second tracking shot. MODEL (${personaDesc}) ALREADY pointing directly at the camera with a challenging smirk, holding [${safeVisualSpecs}].", "a": "Reading hater comment and challenge dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY demonstrating absolute brutal proof and result of [${safeVisualSpecs}].", "a": "Result & CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]`;
+            } else if (index === 27) {
+                // STRATEGI 27: EMPTIES REVIEW
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second shot. MODEL (${personaDesc}) ALREADY holding up a completely empty, thoroughly squeezed/used up, old container of [${safeVisualSpecs}] to the camera, nodding proudly.", "a": "Hook Dialogue showing the empty bottle in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY enthusiastically unboxing or revealing a brand new, pristine package of [${safeVisualSpecs}] next to the empty one.", "a": "Revealing new stock dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY actively using/applying the new [${safeVisualSpecs}].", "a": "Why I love it dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY looking perfectly glowing/satisfied with the result, showing [${safeVisualSpecs}].", "a": "Trust building and CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second shot. MODEL (${personaDesc}) ALREADY holding up a completely empty, thoroughly squeezed/used container of [${safeVisualSpecs}] to the camera, next to a brand new one.", "a": "Hook & Trust building dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY actively using the new [${safeVisualSpecs}] and showing the final result.", "a": "Result & CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]`;
+            } else if (index === 28) {
+                // STRATEGI 28: GATEKEEPING SECRET
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Extreme close-up. MODEL (${personaDesc}) ALREADY looking around nervously and whispering intimately to the camera, partially hiding [${safeVisualSpecs}] out of view.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Jujur aku takut banget di-banned spill ini karena rahasia pabrik, sini ngumpul aku kasih tau rahasianya." },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second shot. MODEL (${personaDesc}) ALREADY slowly revealing [${safeVisualSpecs}] closely to the lens with a secretive smirk.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Selama ini artis-artis tuh pake ini diem-diem makanya pada glowing parah. Bener-bener gak nyangka kan?" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second shot. Extreme macro close-up of [${safeVisualSpecs}] ALREADY actively showing its high quality/texture.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Liat aja nih teksturnya, bener-bener se-premium itu dan harganya sekarang lagi hancur-hancuran banget di bawah." },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second shot. MODEL (${personaDesc}) ALREADY looking around nervously again, shushing the camera while pointing to [${safeVisualSpecs}].", "a": "Translate to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Jangan sampai fyp kalian ke-refresh, mending langsung amankan di ${ctaTerm} sekarang sebelum stoknya ditarik lagi!" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Extreme close-up. MODEL (${personaDesc}) ALREADY looking around nervously and whispering intimately to the camera, slowly revealing [${safeVisualSpecs}].", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Sstt.. sini ngumpul! Jujur aku takut di-banned spill ini, tapi ini rahasia glow up yang selama ini disembunyiin." },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second shot. MODEL (${personaDesc}) ALREADY showing the amazing result of [${safeVisualSpecs}] closely to the lens with a secretive smirk.", "a": "Translate to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Mumpung belum ketahuan banyak orang, buruan kalian sikat di ${ctaTerm} sebelum stok rahasia ini ditarik lagi!" }
+                ]`;
+            } else if (index === 29) {
+                // STRATEGI 29: THE UPGRADE
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY aggressively throwing a generic, old, messy item into a trash bin with a disgusted expression. DO NOT RENDER THE MAIN PRODUCT IN THIS SCENE.", "a": "Hook Dialogue complaining about old item in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY holding [${safeVisualSpecs}] gracefully with glowing lighting, looking extremely relieved and happy.", "a": "Introducing the upgrade dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY actively using/applying [${safeVisualSpecs}] with a very satisfying vibe.", "a": "Explaining the benefit dialogue in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence. MODEL (${personaDesc}) ALREADY looking perfectly flawless/satisfied, posing confidently with [${safeVisualSpecs}].", "a": "Conclusion and CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY aggressively throwing a generic, old item into a trash bin with disgust. DO NOT RENDER THE MAIN PRODUCT IN THIS SCENE.", "a": "Hook Dialogue complaining about old item in ${langPrompt} (STRICTLY 15-20 words / exactly 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. SMOOTH CINEMATIC DOLLY PUSH-IN. The camera glides steadily forward while MODEL (${personaDesc}) ALREADY actively demonstrates the premium texture of [${safeVisualSpecs}]. Beautiful natural lighting, steady camera motion.", "a": "Translate to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Kualitas se-premium ini, awet, dan nyaman banget. Sikat di ${ctaTerm} sekarang mumpung harganya lagi ancur-ancuran!" }
+                ]`;
+            } else if (index === 30) {
+                // STRATEGI 30: PRICE DROP CHALLENGE (VLOG STYLE)
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 vlog style. ACTIVE STEADICAM PUSH-OUT AND PUSH-IN. Background noticeably shifts as camera moves forward at a brisk walking pace. MODEL (${personaDesc}) ALREADY sitting or interacting dynamically with [${safeVisualSpecs}]. Soft diffused cinematic sunlight, highly detailed natural shadows. Ultra-realistic live action.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Tiga juta? Salah! Dua juta? Masih salah. Sejuta setengah? Eits, cek sendiri deh harganya!" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. SLOW TRACKING SHOT. Background gently pans. MODEL (${personaDesc}) ALREADY actively demonstrating the premium texture or feature of [${safeVisualSpecs}]. Soft diffused cinematic sunlight. Ultra-realistic live action.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Beneran kerasa premium dan awet banget. Kualitas sebagus ini masa harganya dibikin seancur ini sih." },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence. Medium close-up tracking shot. MODEL (${personaDesc}) ALREADY actively demonstrating or reacting positively to [${safeVisualSpecs}]. Authentic documentary style.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Gak nyangka bakal dapat diskon segede ini hari ini. Mending kalian langsung buktikan sendiri aja." },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence. ACTIVE STEADICAM PUSH-IN. Background noticeably shifts. MODEL (${personaDesc}) ALREADY pointing directly at the camera with a big smile, holding [${safeVisualSpecs}]. Soft diffused cinematic sunlight.", "a": "Translate to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Mumpung produknya lagi promo gila-gilaan, mending kalian langsung sikat di ${ctaTerm} sekarang sebelum stoknya ludes!" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 vlog style. ACTIVE STEADICAM PUSH-OUT AND PUSH-IN. Background noticeably shifts as camera moves forward at a brisk walking pace. MODEL (${personaDesc}) ALREADY sitting or interacting dynamically with [${safeVisualSpecs}]. Soft diffused cinematic sunlight, highly detailed natural shadows. Ultra-realistic live action.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s): Tiga juta? Salah! Dua juta? Masih salah. Sejuta setengah? Eits, cek sendiri deh harganya!" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence. SLOW TRACKING SHOT. Background gently pans. MODEL (${personaDesc}) ALREADY actively demonstrating the premium texture or feature of [${safeVisualSpecs}]. Soft diffused cinematic sunlight. Ultra-realistic live action.", "a": "Translate to ${langPrompt} with '${ctaTerm}' (STRICTLY 15-20 words / exactly 8s): Kualitas se-premium ini, awet, dan nyaman banget. Klik ${ctaTerm} sekarang mumpung harganya lagi ancur-ancuran!" }
+                ]`;
+            } else if (index === 31) {
+                // STRATEGI 31: STREET INTERVIEW POV (Q&A FORMAT)
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 handheld style. Lively city street background with bokeh lights. An interviewer's hand is ALREADY holding a microphone in the foreground. MODEL (${personaDesc}) is ALREADY actively talking enthusiastically into the microphone. Eye contact looking slightly OFF-CAMERA at the interviewer, NOT at the lens.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Interviewer: [Question about the product]? Model: [Enthusiastic initial reaction]!" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence of the exact same street interview. SLOW DOLLY PUSH-IN. The microphone is still ALREADY visible in the foreground. MODEL (${personaDesc}) ALREADY excitedly holding [${safeVisualSpecs}]. Eye contact still looking OFF-CAMERA at the interviewer. Lively street background remains.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Model: [Overhyped explanation of product features]!" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence of the exact same street interview. The microphone is still ALREADY visible in the frame. MODEL (${personaDesc}) ALREADY actively demonstrating [${safeVisualSpecs}]. Eye contact remains OFF-CAMERA. Lively street background with bokeh.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Interviewer: [Question about price]? Model: [Shocked reaction at how cheap it is]!" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence of the exact same street interview. The microphone is still ALREADY visible. MODEL (${personaDesc}) ALREADY pointing directly at the camera with a big smile, holding [${safeVisualSpecs}]. Eye contact shifts to look DIRECTLY INTO THE CAMERA LENS for a persuasive CTA. Lively street background.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Model: [Testimonial & CTA with '${ctaTerm}']!" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 handheld style. Lively city street background with bokeh lights. An interviewer's hand is ALREADY holding a microphone in the foreground. MODEL (${personaDesc}) is ALREADY actively talking enthusiastically into the microphone. Eye contact looking slightly OFF-CAMERA at the interviewer, NOT at the lens.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Interviewer: [Question about the product]? Model: [Enthusiastic initial reaction]!" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence of the exact same street interview. The microphone is still ALREADY visible in the foreground. MODEL (${personaDesc}) ALREADY excitedly holding [${safeVisualSpecs}]. Eye contact shifts to look DIRECTLY INTO THE CAMERA LENS for a persuasive CTA. Lively street background remains.", "a": "Translate to ${langPrompt} (STRICTLY 15-20 words / exactly 8s) in this format -> Model: [Testimonial & CTA with '${ctaTerm}']!" }
+                ]`;
+            } else {
+                // STRATEGI GENERIK LAINNYA
+                scenesStructure = isExtend30s ? `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY actively WEARING/USING [${safeVisualSpecs}] and ALREADY performing [Specific Action for Hook].", "a": "Hook Dialogue in ${langPrompt} explaining the problem and introducing the solution clearly (STRICTLY 15-20 words to perfectly fill 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY actively demonstrating highlights/features of [${safeVisualSpecs}].", "a": "Body Dialogue 1 detailing features in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+                    { "t": "00:16-00:24", "v": "VEO PROMPT: Continuous 8-second sequence starting with a close-up ALREADY showing texture/details of [${safeVisualSpecs}] on MODEL (${personaDesc}).", "a": "Proof/Result Dialogue in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" },
+                    { "t": "00:24-00:32", "v": "VEO PROMPT: Continuous 8-second sequence starting with [${safeVisualSpecs}] ALREADY centered or styled perfectly on a graphics-ready clean background.", "a": "Urgency and CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" }
+                ]` : `[
+                    { "t": "00:00-00:08", "v": "VEO PROMPT: Cinematic vertical 9:16 portrait. Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY actively WEARING/USING [${safeVisualSpecs}].", "a": "Hook & Value Dialogue in ${langPrompt} explaining the problem and solution clearly (STRICTLY 15-20 words to perfectly fill 8s)" },
+                    { "t": "00:08-00:16", "v": "VEO PROMPT: Continuous 8-second sequence starting with MODEL (${personaDesc}) ALREADY actively demonstrating [${safeVisualSpecs}] leading to a Product Shot.", "a": "Result & CTA Dialogue with '${ctaTerm}' in ${langPrompt} (STRICTLY 15-20 words to perfectly fill 8s)" }
+                ]`;
+            }
+
+            const prompt = `ACT AS: Expert Short-Form Video Creator (TikTok Shop/Shopee Video Expert).
+            GOAL: Create a ${durationText} viral affiliate video optimized for Google Veo 3.1 cinematic generation.
+            PRODUCT: ${safeProduct}. HIGHLIGHTS: ${safeDesc}.
+            PRODUCT VISUAL SPECS (STRICTLY ADHERE - DO NOT HALLUCINATE): ${safeVisualSpecs}
+            LANGUAGE: Visual (Veo Prompt) in English, Dialogue/Voiceover in ${langPrompt}.
+            STYLE: ${STRATEGIES[index].name} (${STRATEGIES[index].desc}).
+            TARGET MODEL PERSONA: ${personaDesc}
+
+            CRITICAL CONSTRAINTS (MUST FOLLOW):
+            - TIME LIMIT: ${timeLimit}
+            - IMAGE-TO-VIDEO SYNC (CRITICAL): The visual prompt ('v') MUST describe an action starting exactly from an immediate, active state (e.g. "Hands are ALREADY actively squeezing...").
+            - VOICEOVER GENDER & TONE: The dialogue/voiceover in 'a' MUST be written for a ${index === 25 ? 'SERIOUS NEWS ANCHOR VOICE (except Scene 3 uses casual interview voice)' : voiceDesc}.
+            - VEO OPTIMIZATION: ABSOLUTELY NO TEXT/WORDS in 'v'. Focus on continuous 8-second chunks.
+            - STRICT ANTI-OVERCLAIM & COMPLIANCE (TIKTOK/SHOPEE SAFE): 
+              1. NEVER use banned hyperbolic words like "dijamin", "100% ampuh", "permanen", "menyembuhkan", "memutihkan instan", "ajaib", "terbaik di dunia".
+              2. Frame benefits as subjective personal experiences ("di aku kerasa...", "menurutku...", "bantu melembapkan") or focus on objective facts (texture, ingredients, comfort).
+              3. Maintain urgency (FOMO/discounts) WITHOUT exaggerating the product's physical/medical capabilities.
+            - SAFETY FILTER BYPASS: Do not use violent or NSFW terms.
+            - JSON FORMATTING RULE: ONLY valid JSON object.
+            
+            STRICT STRUCTURE:
+            { "name": "${STRATEGIES[index].name}", "social_caption": "Viral caption...", "editor_notes": { "speed": "Cinematic pacing...", "music": "Trending audio...", "voice": "${voiceDesc}" }, "scenes": ${scenesStructure} }`;
+
+            let data = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT_ENGINE}:generateContent?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+                    });
+                    const textRes = await res.text();
+                    data = JSON.parse(extractJSON(JSON.parse(textRes).candidates[0].content.parts[0].text)); break; 
+                } catch(e) { if (attempt < 3) await new Promise(r => setTimeout(r, 2000)); }
+            }
+
+            if (!data) {
+                variations[index] = { name: STRATEGIES[index].name, status: 'error', error: true, social_caption: "Gagal memuat format AI. Silakan coba lagi.", editor_notes: { speed: "N/A", music: "N/A" }, scenes: [] };
+            } else {
+                data.editor_notes = data.editor_notes || { speed: "Auto", music: "Trending" };
+                data.scenes = data.scenes || []; data.status = 'ready'; data.error = false; variations[index] = data; 
+            }
+                
+            if (!isBatch) { renderStrategyGrid(); if(activeIdx === index) renderActive(); saveState(); if (data) processImageQueue(); }
+        }
+
+        async function generateAllStrategies() {
+            const btn = document.getElementById('btnGenAll');
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> Memproses Semua...';
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+
+            for(let i=0; i < 32; i++) {
+                if(variations[i].status === 'idle' || variations[i].status === 'error') {
+                    document.getElementById('progressBar').style.width = `${((i+1)/32)*100}%`;
+                    document.getElementById('loadingStatusText').innerText = `Merancang ${STRATEGIES[i].name}...`;
+                    await generateStrategyText(i, true);
+                }
+            }
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check text-green-500 mr-2"></i> Semua Naskah Selesai';
+            renderStrategyGrid(); renderActive(); saveState(); processImageQueue();
+        }
+
+        async function processImageQueue() {
+            if(isProcessingQueue) return; isProcessingQueue = true;
+            for(let vIdx = 0; vIdx < variations.length; vIdx++) {
+                if (!variations[vIdx] || variations[vIdx].status !== 'ready' || !variations[vIdx].scenes) continue; 
+                let currentModelRef = base64ModelImage;
+                for(let sIdx = 0; sIdx < variations[vIdx].scenes.length; sIdx++) {
+                    const scene = variations[vIdx].scenes[sIdx];
+                    if (scene.img && sIdx === 0 && !base64ModelImage && scene.img.length > 1000) currentModelRef = scene.img.split(',')[1];
+
+                    if(!scene.img && !scene.error) {
+                        scene.loading = true; if(activeIdx === vIdx) renderActive();
+                        
+                        const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+                        let promptToGen = scene.v; let modelRefToPass = currentModelRef;
+                        const gender = document.getElementById('modelGender').value;
+                        const handType = gender === 'Woman' ? 'DELICATE FEMININE WOMAN HANDS' : 'STRONG MASCULINE MAN HANDS';
+                        
+                        if (isHandsOnly) {
+                            modelRefToPass = null;
+                            promptToGen = `[CRITICAL OVERRIDE: NO FACES, NO HEADS, NO BODIES IN THE FRAME. ONLY ${handType} OR TORSO VISIBLE] ` + promptToGen;
+                        } else if (vIdx === 25 && sIdx !== 0 && sIdx !== 3) {
+                            modelRefToPass = null;
+                        } else if (vIdx === 29 && sIdx === 0) {
+                            promptToGen = `[CRITICAL OVERRIDE: THE EXACT SAME CHARACTER MUST REMAIN VISIBLE AS DESCRIBED. DO NOT RENDER THE MAIN PRODUCT IN THIS SCENE. INSTEAD RENDER GENERIC TRASH] ` + promptToGen;
+                        }
+                        
+                        const img = await generateImg(promptToGen, modelRefToPass, isHandsOnly, gender);
+                        if (!variations[vIdx] || !variations[vIdx].scenes || !variations[vIdx].scenes[sIdx]) continue;
+                        
+                        if (img) {
+                            variations[vIdx].scenes[sIdx].img = img; variations[vIdx].scenes[sIdx].error = false;
+                            if (sIdx === 0 && !base64ModelImage && !isHandsOnly && img.length > 1000) currentModelRef = img.split(',')[1];
+                        } else { variations[vIdx].scenes[sIdx].error = true; }
+                        variations[vIdx].scenes[sIdx].loading = false;
+                        
+                        renderStrategyGrid(); if(activeIdx === vIdx) renderActive(); saveState(); 
+                    }
+                }
+            } isProcessingQueue = false;
+        }
+
+        async function generateImg(promptText, currentModelRef = null, isHandsOnly = false, gender = 'Woman') {
+            let cleanPrompt = promptText.replace(/VEO PROMPT:/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*starting with/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*/gi, '').replace(/Cinematic vertical 9:16[a-zA-Z0-9\s]*\./gi, '').replace(/Camera[a-zA-Z0-9\s,]*\./gi, '').replace(/Fast pan[a-zA-Z0-9\s,]*\./gi, '').replace(/\[AFTER STATE\]:/gi, '').replace(/\[BEFORE STATE\]:/gi, '').replace(/ALREADY/g, '').replace(/[\r\n]+/g, ' ').trim();
+            const isMirrorScene = cleanPrompt.toLowerCase().includes("mirror");
+            const povInstruction = isMirrorScene ? "First-person mirror POV photography." : "Professional 3rd-person cinematic photography. Camera is looking directly at the subject.";
+            const finalPrompt = povInstruction + " NO TEXT. " + cleanPrompt;
+
+            const createPlaceholder = (errText) => {
+                const canvas = document.createElement('canvas'); canvas.width = 576; canvas.height = 1024; const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ef4444'; ctx.font = 'bold 28px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText("⚠️ VISUAL DIBLOKIR", canvas.width/2, canvas.height/2 - 40); ctx.fillStyle = '#94a3b8'; ctx.font = '16px sans-serif';
+                ctx.fillText(errText, canvas.width/2, canvas.height/2 + 10); ctx.fillStyle = '#4f46e5'; ctx.font = 'bold 14px sans-serif';
+                ctx.fillText("SCRIPT TETAP AMAN. LANJUTKAN!", canvas.width/2, canvas.height/2 + 50); return canvas.toDataURL('image/png');
+            };
+
+            const getMime = (dataUrl) => dataUrl ? (dataUrl.match(/^data:(.*);base64,/) || [])[1] || "image/png" : "image/png";
+            let imgResult = null; let partsContent = [];
+
+            try {
+                const skipProductRef = promptText.includes("DO NOT RENDER THE MAIN PRODUCT");
+                const antiMirrorRule = isMirrorScene ? "" : "4. NO MIRROR SELFIES. DO NOT show a person taking a photo in a mirror. NO phones visible. MUST be a 3rd-person shot.";
+                
+                let baseInstructions = `You are a high-end commercial product photographer. Generate a photorealistic UGC still image. 
+CRITICAL MANDATORY RULES:
+1. STRICT REALISTIC SCALE: You MUST keep the exact real-world size and proportions of the product relative to the human model. If it is a small item (e.g. skincare/makeup), it MUST fit naturally within a single hand. DO NOT make the product unnaturally giant, huge, or oversized.
+2. EXACT REPLICATION: DO NOT mutate, melt, or hallucinate the product's design, text, or shape from Image 1. Keep it 100% identical.
+3. ABSOLUTELY NO GENERATED TEXT, NO LETTERS, NO WATERMARKS, NO BANNERS, NO LOWER-THIRDS, NO NEWS GRAPHICS, NO GIBBERISH in the image.
+${antiMirrorRule}
+
+Scene Description: ${finalPrompt}`;
+
+                if (skipProductRef && currentModelRef && !isHandsOnly) {
+                    // CUMA KIRIM WAJAH MODEL (Tanpa Produk)
+                    const modMime = currentModelRef === base64ModelImage ? getMime(previewModelImgSrc) : "image/png";
+                    let textPrompt = `Image 1 is the MODEL (Character reference). You MUST perfectly replicate this exact person's face, identity, and gender. DO NOT render the main branded product, follow the scene description instead. \n\n${baseInstructions}`;
+                    partsContent.push({ text: textPrompt }); 
+                    partsContent.push({ inlineData: { mimeType: modMime, data: currentModelRef } });
+                } 
+                else if (base64Image && !skipProductRef) {
+                    // KIRIM PRODUK (Atau Produk + Model)
+                    const prodMime = getMime(previewImgSrc); const modMime = currentModelRef === base64ModelImage ? getMime(previewModelImgSrc) : "image/png";
+                    if (currentModelRef && !isHandsOnly) {
+                        let textPrompt = `Image 1 is the PRODUCT. Image 2 is the MODEL (Character reference). You MUST perfectly combine them into a photorealistic scene. The model (Image 2) must be interacting with the product (Image 1) at a REALISTIC NATURAL SCALE.\n\n${baseInstructions}`;
+                        partsContent.push({ text: textPrompt }); partsContent.push({ inlineData: { mimeType: prodMime, data: base64Image } }); partsContent.push({ inlineData: { mimeType: modMime, data: currentModelRef } });
+                    } else {
+                        if (isHandsOnly) partsContent.push({ text: `Image 1 is the PRODUCT. IGNORE any people in Image 1. Extract ONLY the product. Show ${gender.toUpperCase()} HANDS ONLY holding or using the product. NO FACES ALLOWED IN THE IMAGE.\n\n${baseInstructions}` });
+                        else partsContent.push({ text: `Image 1 is the PRODUCT. Replicate it perfectly without changing its design, maintaining a realistic scale in the generated environment.\n\n${baseInstructions}` });
+                        partsContent.push({ inlineData: { mimeType: prodMime, data: base64Image } });
+                    }
+                } else { 
+                    partsContent.push({ text: "ABSOLUTELY NO TEXT, NO BANNERS, NO LOWER-THIRDS. " + finalPrompt }); 
+                }
+
+                const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGE_FREE}:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: partsContent }], generationConfig: { responseModalities: ["IMAGE"], imageConfig: { aspectRatio: '9:16' } } })
+                });
+                if (res && res.ok) {
+                    const result = await res.json();
+                    if (!result.error && result.candidates?.[0]?.finishReason !== 'SAFETY') {
+                        const imgData = result.candidates[0].content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                        if (imgData) imgResult = `data:image/png;base64,${imgData}`;
+                    }
+                }
+            } catch (e) {}
+
+            if (!imgResult) {
+                try {
+                    let truncatedPrompt = finalPrompt; if (truncatedPrompt.length > 450) truncatedPrompt = truncatedPrompt.substring(0, 450) + "...";
+                    const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_IMAGEN_FALLBACK}:predict?key=${apiKey}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ instances: [{ prompt: truncatedPrompt }], parameters: { sampleCount: 1, aspectRatio: "9:16" } })
+                    });
+                    if (res && res.ok) {
+                        const result = await res.json();
+                        if (result.predictions?.[0]) imgResult = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                    }
+                } catch (e) {}
+            } return imgResult || createPlaceholder("Akses Image AI Dibatasi / Sesi Habis");
+        }
+
+        function renderStrategyGrid() {
+            const grid = document.getElementById('strategyGrid');
+            grid.innerHTML = STRATEGIES.map((s, i) => {
+                const v = variations[i]; if(!v) return ''; 
+                const isActive = activeIdx === i; const isError = v.status === 'error'; const isReady = v.status === 'ready'; const isLoading = v.status === 'loading'; const isIdle = v.status === 'idle';
+                const isSpecial = i === 32; let specialClass = isSpecial ? 'border-red-500 bg-red-900/10' : '';
+                
+                let statusText = 'Ready'; let statusColor = 'text-green-400 border-green-400/30 bg-green-400/10';
+                if (isError) { statusText = 'Error'; statusColor = 'text-red-400 border-red-500/30 bg-red-500/10'; }
+                else if (isLoading) { statusText = 'Proses...'; statusColor = 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10 animate-pulse'; }
+                else if (isIdle) { statusText = 'Pilih'; statusColor = 'text-slate-400 border-slate-600 bg-slate-800/50'; }
+
+                let borderClass = isActive ? 'border-indigo-500' : 'border-white/5';
+                if (isActive && isReady) borderClass = 'border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]';
+                if (isSpecial && isActive) borderClass = 'border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.5)]';
+                
+                return `<button onclick="activeIdx=${i}; saveState(); renderActive();" class="strategy-btn glass-card p-4 rounded-2xl flex flex-col items-start justify-start gap-2 transition-all text-left ${isActive ? (isIdle ? 'bg-slate-800' : 'active') : 'hover:bg-slate-800/80'} ${isError ? 'border-red-500/50' : ''} border ${borderClass} ${specialClass}">
+                        <div class="flex justify-between items-start w-full gap-2">
+                            <span class="text-[10px] font-black uppercase ${isActive ? 'text-white' : (isError ? 'text-red-400' : (isSpecial ? 'text-red-300' : 'textindigo-300'))} leading-tight">${s.name}</span>
+                            <span class="text-[7px] font-bold uppercase px-2 py-0.5 rounded-full border ${statusColor} shrink-0">${statusText}</span>
+                        </div>
+                        <p class="text-[9px] ${isActive && !isIdle ? 'text-indigo-100' : 'text-slate-400'} leading-relaxed mt-1">${s.desc}</p>
+                    </button>`;
+            }).join(''); initSpotlight();
+        }
+
+        function renderActive() {
+            const data = variations[activeIdx]; if(!data) return;
+            const area = document.getElementById('outputArea'); renderStrategyGrid();
+            const isSpecial = activeIdx === 32;
+
+            if (data.status === 'idle') {
+                const btnAction = isSpecial ? `extractVideoScript()` : `generateStrategyText(${activeIdx})`;
+                const btnIcon = isSpecial ? `fa-clone` : `fa-wand-magic-sparkles`;
+                const btnColor = isSpecial ? `from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 shadow-[0_0_30px_rgba(59,130,246,0.3)]` : `from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 shadow-[0_0_30px_rgba(99,102,241,0.3)]`;
+                area.innerHTML = `<div class="glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center border border-white/5 h-[60vh]">
+                        <div class="w-24 h-24 ${isSpecial ? 'bg-blue-500/10 border-blue-500/20' : 'bg-indigo-500/10 border-indigo-500/20'} rounded-full flex items-center justify-center mb-6 border">
+                            <i class="fa-solid fa-play text-3xl ${isSpecial ? 'text-blue-400' : 'text-indigo-400'}"></i>
+                        </div>
+                        <h2 class="text-3xl font-black text-white uppercase italic tracking-tighter mb-2 text-gradient">${STRATEGIES[activeIdx].name}</h2>
+                        <p class="text-slate-400 text-sm max-w-md mx-auto mb-8 leading-relaxed">${STRATEGIES[activeIdx].desc}</p>
+                        <button onclick="${btnAction}" class="group relative overflow-hidden bg-gradient-to-r ${btnColor} text-white font-black uppercase tracking-widest px-10 py-5 rounded-2xl transition-all hover:scale-105 active:scale-95 border border-white/10">
+                            <span class="relative z-10 flex items-center gap-2"><i class="solid ${btnIcon}"></i> Generate Strategi Ini</span>
+                            <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                        </button>
+                    </div>`; return;
+            }
+
+            if (data.status === 'loading') {
+                area.innerHTML = `<div class="glass-card rounded-[3rem] p-12 flex flex-col items-center justify-center text-center border border-white/5 h-[60vh]">
+                        <div class="w-24 h-24 bg-indigo-500/10 border-indigo-500/20 rounded-full flex items-center justify-center mb-6 relative border-4">
+                            <div class="absolute inset-0 border-4 border-t-indigo-500 rounded-full animate-spin"></div>
+                            <i class="fa-solid fa-robot text-2xl text-indigo-400 animate-pulse"></i>
+                        </div>
+                        <h2 class="text-2xl font-black text-white uppercase italic tracking-tighter mb-2 text-gradient animate-pulse">Merancang Naskah...</h2>
+                        <p class="text-slate-400 text-xs uppercase tracking-widest">Sedang menghubungi AI untuk menyusun storyboard Google Veo 3.1 untuk ${STRATEGIES[activeIdx].name}.</p>
+                    </div>`; return;
+            }
+
+            const speed = data.editor_notes?.speed || "N/A"; const music = data.editor_notes?.music || "N/A";
+            const voice = data.editor_notes?.voice || (document.getElementById('modelGender').value === 'Woman' ? 'Female Voice' : 'Male Voice');
+
+            area.innerHTML = `<div class="space-y-6">
+                    <div class="glass-card rounded-[2.5rem] p-8 flex flex-col md:flex-row justify-between items-center gap-6 ${data.error ? 'border-l-4 border-red-500' : 'border-l-4 border-indigo-500'}">
+                        <div>
+                            <div class="flex items-center gap-3 mb-2">
+                                <h2 class="text-2xl font-black text-white uppercase italic tracking-tighter text-gradient">${data.name.toUpperCase()}</h2>
+                                <span class="${data.error ? 'bg-red-500/20 text-red-400' : 'bg-indigo-500/20 text-indigo-400'} text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest">Veo 3.1 Architecture</span>
+                                ${(data.scenes && data.scenes.length > 2) ? `<span class="bg-pink-500/20 text-pink-400 text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest border border-pink-500/20">32s Extended (4 Scene)</span>` : `<span class="bg-indigo-500/20 text-indigo-400 text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest border border-indigo-500/20">16s (2 Scene)</span>`}
+                            </div>
+                            <div class="flex flex-wrap gap-4">
+                                <span class="text-[9px] font-bold text-indigo-300 bg-white/5 px-3 py-1 rounded-full border border-white/5">Speed: ${speed}</span>
+                                <span class="text-[9px] font-bold text-indigo-300 bg-white/5 px-3 py-1 rounded-full border border-white/5">Music: ${music}</span>
+                                <span class="text-[9px] font-bold text-pink-300 bg-white/5 px-3 py-1 rounded-full border border-white/5">Voice: ${voice}</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2 shrink-0 w-full md:w-auto">
+                            <button id="btnDownloadZip" onclick="downloadProjectZip(${activeIdx})" class="group bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase text-white shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-file-zipper group-hover:scale-110 transition-transform"></i> <span>DOWNLOAD ZIP PROJECT</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-[2rem] p-6 border border-white/5 ${data.error ? 'bg-red-900/10' : 'bg-indigo-900/10'} flex flex-col gap-3 relative group">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-brands fa-tiktok ${data.error ? 'text-red-400' : 'text-indigo-400'}"></i>
+                                <span class="text-[10px] font-black ${data.error ? 'text-red-300' : 'text-indigo-300'} uppercase tracking-widest">Auto Caption (Ready to Post)</span>
+                            </div>
+                            ${!data.error ? `<button onclick="copyCaption()" id="btnCopyCaption" class="text-[9px] font-bold text-white bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-all flex items-center gap-2"><i class="fa-regular fa-copy"></i> Copy Caption</button>` : ''}
+                        </div>
+                        <p class="text-sm text-slate-200 font-medium leading-relaxed italic pr-12">"${data.social_caption || 'Generating caption...'}"</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        ${data.scenes && data.scenes.map((s, idx) => `
+                            <div class="glass-card rounded-[2.2rem] overflow-hidden flex flex-col group border border-white/5 h-full">
+                                <div class="storyboard-img-container ${s.loading ? 'shimmer' : ''} shrink-0">
+                                    ${renderSceneVisual(s, activeIdx, idx)}
+                                    <div class="absolute top-4 left-4 bg-indigo-600 px-3 py-1 text-[9px] font-black rounded-full shadow-lg">[${s.t}]</div>
+                                </div>
+                                <div class="p-6 flex flex-col flex-1 justify-between gap-4">
+                                    <div>
+                                        <p class="text-[9px] font-black text-indigo-400 uppercase mb-2">Audio / Dialogue (~15 Kata):</p>
+                                        <p class="text-sm font-bold text-white italic leading-relaxed">"${s.a}"</p>
+                                    </div>
+                                    <div class="flex flex-col gap-2 mt-2">
+                                        <button onclick="copySceneFull(${activeIdx}, ${idx})" id="btnCopyFull-${activeIdx}-${idx}" class="w-full bg-indigo-600/30 hover:bg-indigo-500 text-white text-[8px] font-black uppercase py-2 rounded-xl transition-colors border border-indigo-500/30 flex items-center justify-center gap-2" title="Prompt Video dengan mantra khusus untuk Veo/Kling">
+                                            <i class="fa-solid fa-video"></i> Prompt Panjang
+                                        </button>
+                                        <button onclick="copyLeonardoPrompt(${activeIdx}, ${idx})" id="btnCopyLeo-${activeIdx}-${idx}" class="w-full bg-pink-600/30 hover:bg-pink-500 text-white text-[8px] font-black uppercase py-2 rounded-xl transition-colors border border-pink-500/30 flex items-center justify-center gap-2" title="Prompt Video bersih khusus untuk Leonardo AI / Midjourney">
+                                            <i class="fa-solid fa-video"></i> Prompt Pendek
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`; initSpotlight();
+        }
+
+        function renderSceneVisual(s, vIdx, sIdx) {
+            if (s.img) {
+                return `<img src="${s.img}" class="storyboard-img">
+                    <div class="absolute top-2 right-2 z-20">
+                        <button onclick="downloadSceneImage(${vIdx}, ${sIdx})" class="bg-black/40 hover:bg-indigo-600 text-white w-8 h-8 rounded-full backdrop-blur-md flex items-center justify-center transition-all shadow-lg border border-white/10" title="Unduh Gambar (Auto-Crop 9:16)"><i class="fa-solid fa-download text-[10px]"></i></button>
+                    </div>
+                    <div class="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-all flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm z-10 pointer-events-none">
+                        <p class="text-[8px] font-black text-indigo-400 uppercase mb-2">Veo AI Instruction</p>
+                        <p class="text-[9px] text-slate-300 italic mb-4 leading-relaxed line-clamp-4 hover:line-clamp-none overflow-y-auto">${s.v}</p>
+                        <div class="flex gap-2">
+                            <button onclick="copyScenePrompt(${vIdx}, ${sIdx})" id="btnCopyPrompt-${vIdx}-${sIdx}" class="pointer-events-auto bg-slate-700 w-10 h-10 rounded-full flex items-center justify-center hover:bg-slate-600 transition-colors shadow-lg border border-white/10" title="Copy Prompt Video"><i class="fa-regular fa-copy text-white text-xs"></i></button>
+                            <button onclick="regenerateScene(${vIdx}, ${sIdx})" class="pointer-events-auto bg-indigo-600 w-10 h-10 rounded-full flex items-center justify-center hover:bg-indigo-500 transition-colors shadow-lg border border-white/10" title="Regenerate Gambar"><i class="fa-solid fa-sync text-white text-xs"></i></button>
+                        </div>
+                    </div>`;
+            } else if (s.error) {
+                return `<div class="absolute inset-0 flex flex-col items-center justify-center text-red-400 p-6 text-center bg-red-900/10 backdrop-blur-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl mb-3"></i>
+                        <p class="text-[8px] font-black uppercase tracking-widest mb-2">Gagal Memuat Visual</p>
+                        <p class="text-[7px] text-red-300 mb-4 opacity-80 leading-tight">(Sesi Berakhir / API Terputus)</p>
+                        <button onclick="retryScene(${vIdx}, ${sIdx})" class="bg-red-500/20 hover:bg-red-500 hover:text-white px-4 py-2 rounded-full text-[10px] font-bold transition-all border border-red-500/50">COBA LAGI</button>
+                    </div>`;
+            } else {
+                return `<div class="absolute inset-0 flex flex-col items-center justify-center text-slate-600 p-6 text-center">
+                        <i class="fa-solid fa-camera-retro animate-pulse text-xl mb-3 text-indigo-500/30"></i>
+                        <p class="text-[8px] font-black uppercase tracking-widest">Rendering Frame...</p>
+                    </div>`;
+            }
+        }
+
+        function downloadSceneImage(vIdx, sIdx) {
+            const scene = variations[vIdx].scenes[sIdx]; if (!scene || !scene.img) return;
+            const img = new Image(); img.crossOrigin = "Anonymous"; img.src = scene.img;
+            img.onload = () => {
+                const canvas = document.createElement('canvas'); const targetRatio = 9/16;
+                let targetWidth, targetHeight; const imgRatio = img.width / img.height;
+                if (imgRatio > targetRatio) { targetHeight = img.height; targetWidth = targetHeight * targetRatio; } 
+                else { targetWidth = img.width; targetHeight = targetWidth / targetRatio; }
+                canvas.width = targetWidth; canvas.height = targetHeight; const ctx = canvas.getContext('2d');
+                const sourceX = (img.width - targetWidth) / 2; const sourceY = (img.height - targetHeight) / 2;
+                ctx.drawImage(img, sourceX, sourceY, targetWidth, targetHeight, 0, 0, targetWidth, targetHeight);
+                const link = document.createElement('a'); link.download = `dionize-scene-${vIdx}-${sIdx}-9x16.png`; link.href = canvas.toDataURL('image/png'); link.click();
+            };
+        }
+
+        async function regenerateScene(vIdx, sIdx) {
+            if (!variations[vIdx] || !variations[vIdx].scenes || !variations[vIdx].scenes[sIdx]) return;
+            variations[vIdx].scenes[sIdx].img = null; variations[vIdx].scenes[sIdx].error = false; variations[vIdx].scenes[sIdx].loading = true; renderActive();
+            
+            let dynamicModelRef = base64ModelImage;
+            if (sIdx > 0 && variations[vIdx].scenes[0] && variations[vIdx].scenes[0].img && !base64ModelImage) dynamicModelRef = variations[vIdx].scenes[0].img.split(',')[1];
+            
+            const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+            let promptToGen = variations[vIdx].scenes[sIdx].v; let modelRefToPass = dynamicModelRef;
+            const gender = document.getElementById('modelGender').value;
+            const handType = gender === 'Woman' ? 'DELICATE FEMININE WOMAN HANDS' : 'STRONG MASCULINE MAN HANDS';
+
+            if (isHandsOnly) {
+                modelRefToPass = null; promptToGen = `[CRITICAL OVERRIDE: NO FACES, NO HEADS, NO BODIES IN THE FRAME. ONLY ${handType} OR TORSO VISIBLE] ` + promptToGen;
+            } else if (vIdx === 25 && sIdx !== 0 && sIdx !== 3) {
+                modelRefToPass = null;
+            } else if (vIdx === 29 && sIdx === 0) {
+                promptToGen = `[CRITICAL OVERRIDE: THE EXACT SAME CHARACTER MUST REMAIN VISIBLE AS DESCRIBED. DO NOT RENDER THE MAIN PRODUCT IN THIS SCENE. INSTEAD RENDER GENERIC TRASH] ` + promptToGen;
+            }
+            
+            const img = await generateImg(promptToGen, modelRefToPass, isHandsOnly, gender);
+            if (!variations[vIdx] || !variations[vIdx].scenes || !variations[vIdx].scenes[sIdx]) return;
+            if (img) { variations[vIdx].scenes[sIdx].img = img; } else { variations[vIdx].scenes[sIdx].error = true; }
+            variations[vIdx].scenes[sIdx].loading = false; renderActive(); saveState(); 
+        }
+
+        async function retryScene(vIdx, sIdx) { variations[vIdx].scenes[sIdx].error = false; variations[vIdx].scenes[sIdx].loading = true; renderActive(); await regenerateScene(vIdx, sIdx); }
+
+        function getDialogueInstruction(vIdx, sIdx, safeDialogue, isHandsOnly, voiceType) {
+            if (!safeDialogue) return "";
+            const isFemale = voiceType.includes('female');
+            const genderAdj = isFemale ? 'female' : 'male';
+            
+            if (isHandsOnly) return ` An off-camera ${voiceType} is clearly speaking the following dialogue: "${safeDialogue}"`;
+            
+            if (vIdx === 25) {
+                if (sIdx === 1) return ` An off-camera ${genderAdj} news anchor clearly says the following dialogue: "${safeDialogue}"`;
+                if (sIdx === 2) return ` A ${genderAdj} interviewee is clearly speaking the following dialogue to the camera: "${safeDialogue}"`;
+                return ` A ${genderAdj} news anchor is clearly speaking the following dialogue: "${safeDialogue}"`;
+            }
+            if (vIdx === 31) {
+                return ` This is a Q&A street interview. An off-camera interviewer asks a question, and the on-camera character actively responds. The spoken audio/dialogue is: "${safeDialogue}"`;
+            }
+            return ` The character is clearly speaking the following dialogue: "${safeDialogue}"`;
+        }
+
+        function copyScenePrompt(vIdx, sIdx) {
+            const scene = variations[vIdx].scenes[sIdx]; if (!scene || !scene.v) return;
+            const el = document.createElement('textarea');
+            let cleanPrompt = scene.v.replace(/^VEO PROMPT:\s*/i, ''); 
+            const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+            const gender = document.getElementById('modelGender').value;
+            const voiceType = gender === 'Woman' ? 'female woman narrator' : 'male man narrator';
+            
+            const productLockMantra = "CRITICAL: STRICTLY MAINTAIN THE EXACT SHAPE, COLOR, TEXT, AND DETAILS OF THE PRODUCT. NO MORPHING, NO DEFORMATION, NO HALLUCINATION OF LOGOS OR TEXT. ";
+            const antiTextMantra = "ABSOLUTELY NO TEXT, NO TYPOGRAPHY, NO WATERMARKS, NO LETTERS, NO FLOATING WORDS anywhere in the video. Keep the visual completely clean of any generated text. ";
+            const antiGraphicMantra = "STRICTLY LIVE-ACTION PHOTOREALISM. NO 2D graphics, NO comic effects, NO speed lines, NO anime lines, NO graphic overlays, NO cartoon elements. ";
+            let extraMantra = isHandsOnly ? "CRITICAL: NO FACES, NO HEADS ALLOWED IN THE VIDEO. DO NOT MAKE ANY CHARACTER SPEAK ON SCREEN. " : "";
+            
+            let dialogueInstruction = getDialogueInstruction(vIdx, sIdx, scene.a, isHandsOnly, voiceType);
+            
+            el.value = `${extraMantra}${productLockMantra}${antiTextMantra}${antiGraphicMantra}${cleanPrompt}${dialogueInstruction}`; 
+            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+
+            const btn = document.getElementById('btnCopyPrompt-' + vIdx + '-' + sIdx);
+            if(btn) {
+                const originalHTML = btn.innerHTML; const originalClass = btn.className;
+                btn.className = "pointer-events-auto bg-green-600 w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-lg border border-white/10 scale-110";
+                btn.innerHTML = `<i class="fa-solid fa-check text-white text-xs"></i>`;
+                setTimeout(() => { btn.className = originalClass; btn.innerHTML = originalHTML; }, 2000);
+            }
+        }
+
+        function copyCaption() {
+            const data = variations[activeIdx]; if(!data || !data.social_caption) return;
+            const el = document.createElement('textarea'); el.value = data.social_caption;
+            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+
+            const btn = document.getElementById('btnCopyCaption'); const originalContent = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`; btn.classList.add('bg-green-500/20', 'text-green-300');
+            setTimeout(() => { btn.innerHTML = originalContent; btn.classList.remove('bg-green-500/20', 'text-green-300'); }, 2000);
+        }
+
+        function copySceneFull(vIdx, sIdx) {
+            const data = variations[vIdx]; const s = data.scenes[sIdx]; if (!s) return;
+            let visualPrompt = s.v.replace(/^VEO PROMPT:\s*/i, '');
+            const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+            const gender = document.getElementById('modelGender').value;
+            const handType = gender === 'Woman' ? 'delicate feminine woman' : 'strong masculine man';
+            const voiceType = gender === 'Woman' ? 'female woman narrator' : 'male man narrator';
+
+            let antiBlurMantra = "Deep depth of field, f/11 aperture, everything in sharp crisp focus, NO bokeh, NO background blur, fast shutter speed, hyper-detailed. ";
+            const productLockMantra = "CRITICAL: STRICTLY MAINTAIN THE EXACT SHAPE, COLOR, TEXT, AND DETAILS OF THE PRODUCT SEEN IN THE REFERENCE IMAGE. NO MORPHING, NO DEFORMATION, NO HALLUCINATION OF LOGOS OR TEXT. ";
+            const antiTextMantra = "ABSOLUTELY NO TEXT, NO TYPOGRAPHY, NO WATERMARKS, NO LETTERS, NO FLOATING WORDS anywhere in the video. Keep the visual completely clean of any generated text. ";
+            const antiGraphicMantra = "STRICTLY LIVE-ACTION PHOTOREALISM. NO 2D graphics, NO comic effects, NO speed lines, NO anime lines, NO graphic overlays, NO cartoon elements. ";
+            let extraMantra = isHandsOnly ? "CRITICAL: NO FACES, NO HEADS ALLOWED IN THE VIDEO. DO NOT MAKE ANY CHARACTER SPEAK ON SCREEN. " : "";
+            
+            let dialogueInstruction = getDialogueInstruction(vIdx, sIdx, s.a, isHandsOnly, voiceType);
+
+            if (sIdx === 0) {
+                let baseIntro = isHandsOnly 
+                    ? `Cinematic vertical 9:16, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, consistent color grading, realistic skin texture on ${handType} hands, no distortion. `
+                    : "Cinematic vertical 9:16, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, consistent color grading, exact character facial consistency, realistic skin texture, no distortion. ";
+                visualPrompt = baseIntro + antiBlurMantra + productLockMantra + antiTextMantra + antiGraphicMantra + extraMantra + visualPrompt;
+            } else {
+                let baseCont = isHandsOnly
+                    ? "MAINTAIN EXACT VISUAL CONTINUITY: Same lighting, identical environment. Continue seamlessly from the previous scene's suspended action without any sudden transitions, fades, or scene breaks. "
+                    : "MAINTAIN EXACT VISUAL CONTINUITY: Same lighting, identical environment, exact same character facial features and outfit. Continue seamlessly from the previous scene's suspended action without any sudden transitions, fades, or scene breaks. ";
+                visualPrompt = baseCont + antiBlurMantra + productLockMantra + antiTextMantra + antiGraphicMantra + extraMantra + visualPrompt;
+            }
+
+            const el = document.createElement('textarea'); el.value = `${visualPrompt}${dialogueInstruction}`;
+            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+
+            const btn = document.getElementById('btnCopyFull-' + vIdx + '-' + sIdx);
+            if(btn) {
+                const originalHTML = btn.innerHTML; const originalClass = btn.className;
+                btn.className = "w-full bg-green-600 text-white text-[8px] font-black uppercase py-2 rounded-xl transition-all border border-green-500/30 flex items-center justify-center gap-2 scale-105";
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+                setTimeout(() => { btn.className = originalClass; btn.innerHTML = originalHTML; }, 2000);
+            }
+        }
+
+        function copyLeonardoPrompt(vIdx, sIdx) {
+            const data = variations[vIdx]; const s = data.scenes[sIdx]; if (!s) return;
+            let leoPrompt = s.v.replace(/VEO PROMPT:\s*/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*starting with/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*/gi, '').replace(/Cinematic vertical 9:16[a-zA-Z0-9\s]*\./gi, '').replace(/Camera[a-zA-Z0-9\s,]*\./gi, '').replace(/Fast pan[a-zA-Z0-9\s,]*\./gi, '').replace(/\[AFTER STATE\]:/gi, '').replace(/\[BEFORE STATE\]:/gi, '').replace(/ALREADY/g, '').replace(/[\r\n]+/g, ' ').trim();
+            const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+            const gender = document.getElementById('modelGender').value;
+            const voiceType = gender === 'Woman' ? 'female woman narrator' : 'male man narrator';
+            
+            let baseLeoStyle = "Cinematic vertical 9:16 photography, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, highly detailed. ";
+            if (isHandsOnly) baseLeoStyle += "First-person POV or extreme close-up. NO FACES ALLOWED IN THE IMAGE, ONLY HANDS/TORSO VISIBLE. ";
+
+            let dialogueInstruction = getDialogueInstruction(vIdx, sIdx, s.a, isHandsOnly, voiceType);
+
+            let maxLen = 900 - dialogueInstruction.length - baseLeoStyle.length - 10;
+            if (leoPrompt.length > maxLen) { leoPrompt = leoPrompt.substring(0, maxLen) + "..."; }
+
+            const el = document.createElement('textarea'); el.value = `${baseLeoStyle}${leoPrompt}${dialogueInstruction}`;
+            document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+
+            const btn = document.getElementById('btnCopyLeo-' + vIdx + '-' + sIdx);
+            if(btn) {
+                const originalHTML = btn.innerHTML; const originalClass = btn.className;
+                btn.className = "w-full bg-green-600 text-white text-[8px] font-black uppercase py-2 rounded-xl transition-all border border-green-500/30 flex items-center justify-center gap-2 scale-105";
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+                setTimeout(() => { btn.className = originalClass; btn.innerHTML = originalHTML; }, 2000);
+            }
+        }
+
+        async function downloadProjectZip(vIdx) {
+            const data = variations[vIdx]; if (!data || !data.scenes) return;
+            const btn = document.getElementById('btnDownloadZip'); const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> <span>ZIPPING...</span>'; btn.disabled = true;
+
+            try {
+                const zip = new JSZip();
+                const folderName = data.name.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'project';
+                const folder = zip.folder(folderName);
+
+                let textContent = `PROJECT: ${data.name.toUpperCase()}\n`;
+                textContent += `CAPTION:\n${data.social_caption}\n\nEDITOR NOTES:\n- Speed: ${data.editor_notes?.speed || "N/A"}\n- Music: ${data.editor_notes?.music || "N/A"}\n\n============================\nSCRIPT DETAILS\n============================\n\n`;
+
+                const isHandsOnly = (vIdx === 16 || vIdx === 18 || vIdx === 19 || vIdx === 20 || vIdx === 22);
+                const gender = document.getElementById('modelGender').value;
+                const handType = gender === 'Woman' ? 'delicate feminine woman' : 'strong masculine man';
+                const voiceType = gender === 'Woman' ? 'female woman narrator' : 'male man narrator';
+                let antiBlurMantra = "Deep depth of field, f/11 aperture, everything in sharp crisp focus, NO bokeh, NO background blur, fast shutter speed, hyper-detailed. ";
+                const productLockMantra = "CRITICAL: STRICTLY MAINTAIN THE EXACT SHAPE, COLOR, TEXT, AND DETAILS OF THE PRODUCT SEEN IN THE REFERENCE IMAGE. NO MORPHING, NO DEFORMATION, NO HALLUCINATION OF LOGOS OR TEXT. ";
+                const antiTextMantra = "ABSOLUTELY NO TEXT, NO TYPOGRAPHY, NO WATERMARKS, NO LETTERS, NO FLOATING WORDS anywhere in the video. Keep the visual completely clean of any generated text. ";
+                const antiGraphicMantra = "STRICTLY LIVE-ACTION PHOTOREALISM. NO 2D graphics, NO comic effects, NO speed lines, NO anime lines, NO graphic overlays, NO cartoon elements. ";
+
+                for (let i = 0; i < data.scenes.length; i++) {
+                    const s = data.scenes[i];
+                    let visualPrompt = s.v.replace(/^VEO PROMPT:\s*/i, '');
+                    let extraMantra = isHandsOnly ? "CRITICAL: NO FACES, NO HEADS ALLOWED IN THE VIDEO. DO NOT MAKE ANY CHARACTER SPEAK ON SCREEN. " : "";
+                    let dialogueInstruction = getDialogueInstruction(vIdx, i, s.a, isHandsOnly, voiceType);
+
+                    if (i === 0) {
+                        let baseIntro = isHandsOnly ? `Cinematic vertical 9:16, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, consistent color grading, realistic skin texture on ${handType} hands, no distortion. ` : "Cinematic vertical 9:16, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, consistent color grading, exact character facial consistency, realistic skin texture, no distortion. ";
+                        visualPrompt = baseIntro + antiBlurMantra + productLockMantra + antiTextMantra + antiGraphicMantra + extraMantra + visualPrompt;
+                    } else {
+                        let baseCont = isHandsOnly ? "MAINTAIN EXACT VISUAL CONTINUITY: Same lighting, identical environment. Continue seamlessly from the previous scene's suspended action without any sudden transitions, fades, or scene breaks. " : "MAINTAIN EXACT VISUAL CONTINUITY: Same lighting, identical environment, exact same character facial features and outfit. Continue seamlessly from the previous scene's suspended action without any sudden transitions, fades, or scene breaks. ";
+                        visualPrompt = baseCont + antiBlurMantra + productLockMantra + antiTextMantra + antiGraphicMantra + extraMantra + visualPrompt;
+                    }
+
+                    let leoPrompt = s.v.replace(/VEO PROMPT:\s*/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*starting with/gi, '').replace(/Continuous 8-second[a-zA-Z0-9\s-]*/gi, '').replace(/Cinematic vertical 9:16[a-zA-Z0-9\s]*\./gi, '').replace(/Camera[a-zA-Z0-9\s,]*\./gi, '').replace(/Fast pan[a-zA-Z0-9\s,]*\./gi, '').replace(/\[AFTER STATE\]:/gi, '').replace(/\[BEFORE STATE\]:/gi, '').replace(/ALREADY/g, '').replace(/[\r\n]+/g, ' ').trim();
+                    let baseLeoStyle = "Cinematic vertical 9:16 photography, Ultra HD 4K, high-end realistic UGC style. Natural soft daylight, highly detailed. ";
+                    if (isHandsOnly) baseLeoStyle += "First-person POV or extreme close-up. NO FACES ALLOWED IN THE IMAGE, ONLY HANDS/TORSO VISIBLE. ";
+                    
+                    let maxLen = 900 - dialogueInstruction.length - baseLeoStyle.length - 10;
+                    if (leoPrompt.length > maxLen) leoPrompt = leoPrompt.substring(0, maxLen) + "...";
+                    let finalLeoPrompt = baseLeoStyle + leoPrompt + dialogueInstruction;
+
+                    textContent += `[SCENE ${i + 1} | ${s.t}]\nPROMPT VIDEO (VEO/KLING): ${visualPrompt}${dialogueInstruction}\n\nPROMPT VIDEO (LEONARDO/MIDJOURNEY): ${finalLeoPrompt}\n\nAUDIO/DIALOG: "${s.a}"\n\n------------------------------------------------------\n\n`;
+
+                    if (s.img) {
+                        const croppedBase64 = await new Promise((resolve) => {
+                            const img = new Image(); img.crossOrigin = "Anonymous"; 
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas'); const targetRatio = 9/16;
+                                let targetWidth, targetHeight; const imgRatio = img.width / img.height;
+                                if (imgRatio > targetRatio) { targetHeight = img.height; targetWidth = targetHeight * targetRatio; } 
+                                else { targetWidth = img.width; targetHeight = targetWidth / targetRatio; }
+                                canvas.width = targetWidth; canvas.height = targetHeight; const ctx = canvas.getContext('2d');
+                                const sourceX = (img.width - targetWidth) / 2; const sourceY = (img.height - targetHeight) / 2;
+                                ctx.drawImage(img, sourceX, sourceY, targetWidth, targetHeight, 0, 0, targetWidth, targetHeight);
+                                resolve(canvas.toDataURL('image/png').split(',')[1]);
+                            };
+                            img.onerror = () => resolve(s.img.split(',')[1]); img.src = s.img;
+                        });
+                        let timeSuffix = i === 0 ? "00-08" : `${i*8}-${(i+1)*8}`;
+                        folder.file(`scene_${i + 1}_${timeSuffix}.png`, croppedBase64, {base64: true});
+                    }
+                }
+
+                folder.file("Script_and_Caption.txt", textContent);
+                if (base64Image) folder.file("Original_Product_Reference.png", base64Image, {base64: true});
+                if (base64ModelImage) folder.file("Original_Model_Reference.png", base64ModelImage, {base64: true});
+
+                const content = await zip.generateAsync({type: "blob"});
+                const link = document.createElement('a'); link.href = URL.createObjectURL(content);
+                link.download = `Dionize_${folderName}.zip`; link.click(); URL.revokeObjectURL(link.href);
+
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> <span>BERHASIL DISIMPAN!</span>`;
+                btn.classList.replace('from-emerald-600', 'from-green-600'); btn.classList.replace('to-emerald-500', 'to-green-500');
+                setTimeout(() => { btn.innerHTML = originalHTML; btn.classList.replace('from-green-600', 'from-emerald-600'); btn.classList.replace('to-green-500', 'to-emerald-500'); btn.disabled = false; }, 3000);
+
+            } catch (error) {
+                showAlert("Gagal membuat file ZIP."); btn.innerHTML = originalHTML; btn.disabled = false;
+            }
+        }
+
+        function setupDragAndDrop(zoneId, inputId, previewCallback) {
+            const dropZone = document.getElementById(zoneId);
+            const fileInput = document.getElementById(inputId);
+            if(!dropZone) return;
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-highlight'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-highlight'), false);
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                if (dt.files && dt.files.length > 0) {
+                    fileInput.files = dt.files; 
+                    previewCallback(fileInput); 
+                }
+            }, false);
+        }
+
+        function previewModel(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                previewModelImgSrc = e.target.result;
+                base64ModelImage = e.target.result.split(',')[1];
+                document.getElementById('modelImgPreview').src = previewModelImgSrc;
+                document.getElementById('previewContainerModel').classList.remove('hidden');
+                document.getElementById('uploadPromptModel').classList.add('hidden');
+                
+                const toggle = document.getElementById('togglePersona');
+                if (toggle.checked) {
+                    toggle.checked = false;
+                    togglePersonaState(false); 
+                }
+
+                const genderSelect = document.getElementById('modelGender');
+                const originalOptions = genderSelect.innerHTML;
+                genderSelect.innerHTML = '<option value="Woman">⏳ Deteksi Gender AI...</option>';
+                genderSelect.disabled = true;
+
+                let detectedGender = 'Woman'; 
+                try {
+                    const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT_ENGINE}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: `Identify the gender of the person in this image. Return JSON ONLY: {"gender": "Woman"} or {"gender": "Man"}. If no person is clearly visible or if unsure, return Woman.` },
+                                    { inlineData: { mimeType: "image/png", data: base64ModelImage } }
+                                ]
+                            }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    
+                    const textRes = await res.text();
+                    const result = JSON.parse(textRes);
+                    
+                    if (result.candidates && result.candidates[0].content) {
+                        let jsonText = extractJSON(result.candidates[0].content.parts[0].text);
+                        let data = JSON.parse(jsonText);
+                        if (data.gender === 'Man' || data.gender === 'Woman') {
+                            detectedGender = data.gender;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Gender detection failed:", err);
+                }
+
+                genderSelect.innerHTML = originalOptions;
+                genderSelect.value = detectedGender;
+                genderSelect.disabled = false;
+                
+                toggleHijabOption();
+                saveState();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initSpotlight() {
+            const cards = document.querySelectorAll('.glass-card, .strategy-btn');
+            cards.forEach(card => {
+                card.onmousemove = e => {
+                    const rect = card.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                    card.style.setProperty('--mouse-x', `${x}px`); card.style.setProperty('--mouse-y', `${y}px`);
+                }
+            });
+        }
+
+        function togglePersonaState(triggerSave = true) {
+            const toggle = document.getElementById('togglePersona'); const settings = document.getElementById('personaSettings');
+            if (!toggle.checked && !base64ModelImage) {
+                showAlert("Upload Foto Model / Aktor di kotak atas dulu ya, agar fitur AI Persona bisa dimatikan!");
+                toggle.checked = true; if(triggerSave) saveState(); return;
+            }
+            if (toggle.checked) settings.classList.remove('opacity-40', 'pointer-events-none');
+            else settings.classList.add('opacity-40', 'pointer-events-none');
+            if(triggerSave) saveState();
+        }
+
+        function toggleHijabOption() {
+            const gender = document.getElementById('modelGender').value; const hijabSelect = document.getElementById('modelHijab');
+            if (gender === 'Man') { hijabSelect.value = 'Non-Hijab'; hijabSelect.disabled = true; hijabSelect.classList.add('opacity-50', 'cursor-not-allowed'); } 
+            else { hijabSelect.disabled = false; hijabSelect.classList.remove('opacity-50', 'cursor-not-allowed'); }
+        }
+
+        function toggleChat() {
+            const win = document.getElementById('chatWindow');
+            if(win.classList.contains('hidden')) { win.classList.remove('hidden'); win.classList.add('chat-enter-active'); } 
+            else { win.classList.add('hidden'); } initSpotlight();
+        }
+
+        function previewChatImage(input) {
+            const file = input.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                chatBase64Image = e.target.result.split(',')[1];
+                document.getElementById('chatImgPreview').src = e.target.result;
+                document.getElementById('chatPreviewContainer').classList.remove('hidden');
+            }; reader.readAsDataURL(file);
+        }
+
+        function removeChatImage() {
+            chatBase64Image = null; document.getElementById('chatImageInput').value = "";
+            document.getElementById('chatPreviewContainer').classList.add('hidden');
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault(); const input = document.getElementById('chatInput');
+            const msg = input.value.trim(); if(!msg && !chatBase64Image) return;
+
+            let userContent = "";
+            if (chatBase64Image) {
+                userContent += `<img src="data:image/jpeg;base64,${chatBase64Image}" class="h-20 w-20 object-cover rounded-lg mb-2 border border-white/20">`;
+            }
+            if (msg) userContent += msg;
+
+            appendMessage('user', userContent); input.value = '';
+            let imageToPass = chatBase64Image; removeChatImage();
+            const typingId = appendMessage('bot', '...', true);
+
+            try {
+                const systemPrompt = `Kamu adalah "DioBot", Konsultan Affiliate Marketing Expert khusus TikTok Shop & Shopee Video untuk aplikasi "Dionize UGC Script Engine".
+Kamu tahu bahwa aplikasi ini memiliki 32 Strategi Konten.
+Tugas utamamu:
+1. Jika user mengirimkan foto produk, analisis foto tersebut (warna, bahan, tipe produk).
+2. Berikan rekomendasi 1-2 Strategi Naskah (dari 32 daftar yang ada) yang PALING COCOK untuk membuat produk itu viral.
+3. Berikan 1 tips editing/angle kamera.
+Gaya bicara: Santai, antusias, profesional, pakai emoji, singkat dan jelas. Bahasa Indonesia.`;
+
+                let contents = [{ role: "user", parts: [{ text: systemPrompt + "\n\nUser: " + msg }] }];
+                if (imageToPass) contents[0].parts.push({ inlineData: { mimeType: "image/jpeg", data: imageToPass } });
+
+                const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_TEXT_ENGINE}:generateContent?key=${apiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: contents })
+                });
+
+                const textRes = await res.text(); const result = JSON.parse(textRes);
+                if (!result.candidates || !result.candidates[0]) throw new Error("Format API tidak valid");
+                const reply = result.candidates[0].content.parts[0].text;
+                document.getElementById(typingId).remove(); appendMessage('bot', reply);
+
+            } catch(e) {
+                document.getElementById(typingId).remove();
+                appendMessage('bot', "Maaf Kak, server lagi kepenuhan nih. Boleh coba kirim lagi? 🙏");
+            }
+        }
+
+        function appendMessage(role, text, isTyping = false) {
+            const container = document.getElementById('chatMessages'); const id = 'msg-' + Date.now();
+            let html = '';
+            if(role === 'bot') {
+                html = `<div id="${id}" class="flex gap-3"><div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0 border border-indigo-500/30"><i class="fa-solid ${isTyping ? 'fa-circle-notch animate-spin' : 'fa-robot'} text-indigo-400 text-xs"></i></div><div class="bg-slate-800/80 p-3 rounded-2xl rounded-tl-none border border-white/5 text-xs text-slate-300 leading-relaxed shadow-sm">${text}</div></div>`;
+            } else {
+                html = `<div class="flex gap-3 flex-row-reverse"><div class="bg-indigo-600 p-3 rounded-2xl rounded-tr-none text-xs text-white leading-relaxed shadow-lg shadow-indigo-600/10">${text}</div></div>`;
+            }
+            container.insertAdjacentHTML('beforeend', html); container.scrollTop = container.scrollHeight; return id;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setupDragAndDrop('dropZone', 'productImage', previewAndAnalyze);
+            setupDragAndDrop('dropZoneModel', 'modelImage', previewModel);
+            const videoInputWrap = document.getElementById('dropZoneVideo');
+            if(videoInputWrap) setupDragAndDrop('dropZoneVideo', 'videoFile', handleVideoUpload);
+            initSpotlight(); loadState(); checkLoginState();
+        });
+    </script>
+</body>
+</html>
